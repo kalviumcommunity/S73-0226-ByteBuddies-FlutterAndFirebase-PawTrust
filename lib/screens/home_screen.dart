@@ -11,25 +11,25 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
 
-  static const Color primaryBlue = Color(0xFF2F80ED);
-  static const Color trustGreen = Color(0xFF2F7D32);
-
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final primary = theme.colorScheme.primary;
+    final trust = theme.colorScheme.secondary;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
+      backgroundColor: theme.scaffoldBackgroundColor,
 
       body: Column(
         children: [
-          // 🔵 HERO SECTION (ENERGY)
           Container(
             height: 260,
             width: double.infinity,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  primaryBlue,
-                  Color(0xFF4C9AFF),
+                  primary,
+                  primary.withOpacity(0.85),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -39,7 +39,6 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Top bar
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -53,12 +52,12 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         );
                       },
-                      child: const CircleAvatar(
+                      child: CircleAvatar(
                         radius: 22,
                         backgroundColor: Colors.white,
                         child: Icon(
                           Icons.person,
-                          color: primaryBlue,
+                          color: primary,
                         ),
                       ),
                     ),
@@ -88,14 +87,13 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
-          // ⚪ FLOATING CONTENT
           Expanded(
             child: Container(
               width: double.infinity,
               transform: Matrix4.translationValues(0, -30, 0),
-              decoration: const BoxDecoration(
-                color: Color(0xFFF9FAFB),
-                borderRadius: BorderRadius.vertical(
+              decoration: BoxDecoration(
+                color: theme.scaffoldBackgroundColor,
+                borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(32),
                 ),
               ),
@@ -103,40 +101,37 @@ class _HomeScreenState extends State<HomeScreen> {
               child: ListView(
                 physics: const BouncingScrollPhysics(),
                 children: [
-                  _trustStatusCard(),
+                  _trustStatusCard(context),
 
                   const SizedBox(height: 32),
 
-                  // 🔘 PRIMARY ACTIONS
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      _primaryAction(
-                        icon: Icons.directions_walk,
-                        label: 'Start Walk',
-                      ),
-                      _primaryAction(
-                        icon: Icons.search,
-                        label: 'Caregiver',
-                      ),
+                      _primaryAction(context,
+                          icon: Icons.directions_walk, label: 'Start Walk'),
+                      _primaryAction(context,
+                          icon: Icons.search, label: 'Caregiver'),
                     ],
                   ),
 
                   const SizedBox(height: 32),
 
-                  // 📋 FEATURE LIST
                   _featureTile(
+                    context,
                     icon: Icons.verified,
                     title: 'Trust Score',
                     subtitle: 'All caregivers are identity verified',
                     highlight: true,
                   ),
                   _featureTile(
+                    context,
                     icon: Icons.timeline,
                     title: 'Live Activity',
                     subtitle: 'Track walks in real time',
                   ),
                   _featureTile(
+                    context,
                     icon: Icons.history,
                     title: 'Walk History',
                     subtitle: 'View past walks & summaries',
@@ -150,20 +145,19 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
 
-      // 🔴 CENTER FAB (TRUST + ACTION)
       floatingActionButton: Container(
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
-              color: trustGreen.withOpacity(0.35),
+              color: trust.withOpacity(0.35),
               blurRadius: 24,
               offset: const Offset(0, 12),
             ),
           ],
         ),
         child: FloatingActionButton(
-          backgroundColor: trustGreen,
+          backgroundColor: trust,
           onPressed: () {},
           child: const Icon(Icons.pets),
         ),
@@ -171,7 +165,6 @@ class _HomeScreenState extends State<HomeScreen> {
       floatingActionButtonLocation:
           FloatingActionButtonLocation.centerDocked,
 
-      // 🔻 PREMIUM FLOATING NAV
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         child: Container(
@@ -190,13 +183,11 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _navItem(icon: Icons.home_outlined, index: 0),
-              _navItem(icon: Icons.notifications_none, index: 1),
-
+              _navItem(context, icon: Icons.home_outlined, index: 0),
+              _navItem(context, icon: Icons.notifications_none, index: 1),
               const SizedBox(width: 40),
-
-              _navItem(icon: Icons.pets_outlined, index: 2),
-              _navItem(icon: Icons.settings_outlined, index: 3),
+              _navItem(context, icon: Icons.pets_outlined, index: 2),
+              _navItem(context, icon: Icons.settings_outlined, index: 3),
             ],
           ),
         ),
@@ -204,11 +195,13 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // 🔹 NAV ITEM
-  Widget _navItem({
+  Widget _navItem(
+    BuildContext context, {
     required IconData icon,
     required int index,
   }) {
+    final theme = Theme.of(context);
+    final trust = theme.colorScheme.secondary;
     final bool isActive = _currentIndex == index;
 
     return GestureDetector(
@@ -217,22 +210,21 @@ class _HomeScreenState extends State<HomeScreen> {
         duration: const Duration(milliseconds: 250),
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: isActive
-              ? trustGreen.withOpacity(0.12)
-              : Colors.transparent,
+          color: isActive ? trust.withOpacity(0.12) : Colors.transparent,
           shape: BoxShape.circle,
         ),
         child: Icon(
           icon,
           size: isActive ? 26 : 24,
-          color: isActive ? trustGreen : Colors.black54,
+          color: isActive ? trust : Colors.black54,
         ),
       ),
     );
   }
 
-  // 🟢 TRUST STATUS CARD
-  Widget _trustStatusCard() {
+  Widget _trustStatusCard(BuildContext context) {
+    final trust = Theme.of(context).colorScheme.secondary;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -251,12 +243,12 @@ class _HomeScreenState extends State<HomeScreen> {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: trustGreen.withOpacity(0.12),
+              color: trust.withOpacity(0.12),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.verified,
-              color: trustGreen,
+              color: trust,
               size: 28,
             ),
           ),
@@ -285,11 +277,13 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // 🔘 PRIMARY ACTION
-  Widget _primaryAction({
+  Widget _primaryAction(
+    BuildContext context, {
     required IconData icon,
     required String label,
   }) {
+    final primary = Theme.of(context).colorScheme.primary;
+
     return Column(
       children: [
         Container(
@@ -306,7 +300,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           child: Icon(
             icon,
-            color: primaryBlue,
+            color: primary,
             size: 28,
           ),
         ),
@@ -319,13 +313,17 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // 📋 FEATURE TILE
-  Widget _featureTile({
+  Widget _featureTile(
+    BuildContext context, {
     required IconData icon,
     required String title,
     required String subtitle,
     bool highlight = false,
   }) {
+    final theme = Theme.of(context);
+    final primary = theme.colorScheme.primary;
+    final trust = theme.colorScheme.secondary;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
@@ -344,12 +342,13 @@ class _HomeScreenState extends State<HomeScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: (highlight ? trustGreen : primaryBlue).withOpacity(0.1),
+              color:
+                  (highlight ? trust : primary).withOpacity(0.12),
               shape: BoxShape.circle,
             ),
             child: Icon(
               icon,
-              color: highlight ? trustGreen : primaryBlue,
+              color: highlight ? trust : primary,
             ),
           ),
           const SizedBox(width: 16),

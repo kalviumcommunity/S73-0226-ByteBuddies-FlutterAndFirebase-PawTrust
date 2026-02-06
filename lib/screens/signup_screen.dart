@@ -5,6 +5,8 @@ class SignupScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
       body: SizedBox(
         width: double.infinity,
@@ -54,6 +56,7 @@ class SignupScreen extends StatelessWidget {
                     ),
                   ),
                   child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
@@ -68,65 +71,20 @@ class SignupScreen extends StatelessWidget {
                         const SizedBox(height: 8),
                         const Text(
                           'Join PawTrust to care better',
-                          style: TextStyle(
-                            color: Colors.black54,
-                          ),
+                          style: TextStyle(color: Colors.black54),
                         ),
 
                         const SizedBox(height: 24),
 
-                        TextField(
-                          decoration: InputDecoration(
-                            hintText: 'Full Name',
-                            filled: true,
-                            fillColor: const Color(0xFFF9FAFB),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
-                            ),
-                          ),
-                        ),
+                        _inputField(context, hint: 'Full Name'),
                         const SizedBox(height: 16),
-
-                        TextField(
-                          decoration: InputDecoration(
-                            hintText: 'Email',
-                            filled: true,
-                            fillColor: const Color(0xFFF9FAFB),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
-                            ),
-                          ),
-                        ),
+                        _inputField(context, hint: 'Email'),
                         const SizedBox(height: 16),
-
-                        TextField(
-                          obscureText: true,
-                          decoration: InputDecoration(
-                            hintText: 'Password',
-                            filled: true,
-                            fillColor: const Color(0xFFF9FAFB),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
-                            ),
-                          ),
-                        ),
+                        _inputField(context,
+                            hint: 'Password', obscure: true),
                         const SizedBox(height: 16),
-
-                        TextField(
-                          obscureText: true,
-                          decoration: InputDecoration(
-                            hintText: 'Confirm Password',
-                            filled: true,
-                            fillColor: const Color(0xFFF9FAFB),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
-                            ),
-                          ),
-                        ),
+                        _inputField(context,
+                            hint: 'Confirm Password', obscure: true),
 
                         const SizedBox(height: 24),
 
@@ -136,7 +94,8 @@ class SignupScreen extends StatelessWidget {
                           child: ElevatedButton(
                             onPressed: () {},
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF2F7D32),
+                              backgroundColor:
+                                  theme.colorScheme.secondary,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
@@ -156,13 +115,11 @@ class SignupScreen extends StatelessWidget {
 
                         Center(
                           child: TextButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                            },
-                            child: const Text(
+                            onPressed: () => Navigator.pop(context),
+                            child: Text(
                               'Already have an account? Login',
                               style: TextStyle(
-                                color: Color(0xFF2F7D32),
+                                color: theme.colorScheme.secondary,
                               ),
                             ),
                           ),
@@ -175,6 +132,19 @@ class SignupScreen extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _inputField(
+    BuildContext context, {
+    required String hint,
+    bool obscure = false,
+  }) {
+    return TextField(
+      obscureText: obscure,
+      decoration: InputDecoration(
+        hintText: hint,
       ),
     );
   }

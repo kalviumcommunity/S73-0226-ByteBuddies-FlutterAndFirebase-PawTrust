@@ -13,13 +13,16 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final primary = theme.colorScheme.primary;
+    final trust = theme.colorScheme.secondary;
+
     return Scaffold(
       body: SizedBox(
         width: double.infinity,
         height: double.infinity,
         child: Stack(
           children: [
-            // 🔹 Background Image
             Positioned.fill(
               child: Image.asset(
                 'assets/images/auth_bg.png',
@@ -27,7 +30,6 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
               ),
             ),
 
-            // 🔹 Dark overlay
             Positioned.fill(
               child: Container(
                 color: Colors.black.withOpacity(0.45),
@@ -39,7 +41,6 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
               children: [
                 const SizedBox(height: 80),
 
-                // Top Text
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 24),
                   child: Text(
@@ -66,7 +67,6 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
 
                 const Spacer(),
 
-                // 🔹 Bottom Card
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(24),
@@ -77,32 +77,28 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                     ),
                   ),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       _roleCard(
+                        context,
                         title: 'Pet Owner',
                         description: 'Find trusted caregivers for your pets',
                         icon: Icons.pets,
                         isActive: selectedRole == 'owner',
-                        onTap: () {
-                          setState(() {
-                            selectedRole = 'owner';
-                          });
-                        },
+                        onTap: () => setState(() {
+                          selectedRole = 'owner';
+                        }),
                       ),
                       const SizedBox(height: 16),
-
                       _roleCard(
+                        context,
                         title: 'Caregiver',
                         description: 'Provide care and walks for pets',
                         icon: Icons.directions_walk,
                         isActive: selectedRole == 'caregiver',
-                        onTap: () {
-                          setState(() {
-                            selectedRole = 'caregiver';
-                          });
-                        },
+                        onTap: () => setState(() {
+                          selectedRole = 'caregiver';
+                        }),
                       ),
 
                       const SizedBox(height: 32),
@@ -117,14 +113,14 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                                   Navigator.pushReplacement(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) => const HomeScreen(),
+                                      builder: (_) => const HomeScreen(),
                                     ),
                                   );
                                 },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF2F80ED),
+                            backgroundColor: trust,
                             disabledBackgroundColor:
-                                const Color(0xFFE5E7EB),
+                                theme.disabledColor.withOpacity(0.3),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -150,33 +146,35 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
     );
   }
 
-  Widget _roleCard({
+  Widget _roleCard(
+    BuildContext context, {
     required String title,
     required String description,
     required IconData icon,
     required bool isActive,
     required VoidCallback onTap,
   }) {
+    final theme = Theme.of(context);
+    final trust = theme.colorScheme.secondary;
+
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+        duration: const Duration(milliseconds: 220),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xFFF9FAFB),
+          color: theme.scaffoldBackgroundColor,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isActive
-                ? const Color(0xFF2F80ED)
-                : const Color(0xFFE5E7EB),
+            color: isActive ? trust : theme.dividerColor,
             width: 2,
           ),
           boxShadow: isActive
               ? [
                   BoxShadow(
-                    color: const Color(0xFF2F80ED).withOpacity(0.2),
-                    blurRadius: 12,
-                    offset: const Offset(0, 6),
+                    color: trust.withOpacity(0.25),
+                    blurRadius: 14,
+                    offset: const Offset(0, 8),
                   ),
                 ]
               : [],
@@ -186,9 +184,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: isActive
-                    ? const Color(0xFF2F80ED)
-                    : const Color(0xFFE5E7EB),
+                color: isActive ? trust : theme.dividerColor,
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -211,9 +207,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                   const SizedBox(height: 4),
                   Text(
                     description,
-                    style: const TextStyle(
-                      color: Colors.black54,
-                    ),
+                    style: const TextStyle(color: Colors.black54),
                   ),
                 ],
               ),

@@ -7,6 +7,9 @@ class LoginScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final trust = theme.colorScheme.secondary;
+
     return Scaffold(
       body: SizedBox(
         width: double.infinity,
@@ -69,36 +72,22 @@ class LoginScreen extends StatelessWidget {
                       const SizedBox(height: 8),
                       const Text(
                         'Login to your account',
-                        style: TextStyle(
-                          color: Colors.black54,
-                        ),
+                        style: TextStyle(color: Colors.black54),
                       ),
 
                       const SizedBox(height: 24),
 
-                      TextField(
+                      const TextField(
                         decoration: InputDecoration(
                           hintText: 'Email',
-                          filled: true,
-                          fillColor: const Color(0xFFF9FAFB),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
-                          ),
                         ),
                       ),
                       const SizedBox(height: 16),
 
-                      TextField(
+                      const TextField(
                         obscureText: true,
                         decoration: InputDecoration(
                           hintText: 'Password',
-                          filled: true,
-                          fillColor: const Color(0xFFF9FAFB),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
-                          ),
                         ),
                       ),
 
@@ -110,14 +99,14 @@ class LoginScreen extends StatelessWidget {
                         child: ElevatedButton(
                           onPressed: () {
                             Navigator.pushReplacement(
-    context,
-    MaterialPageRoute(
-      builder: (context) => const RoleSelectionScreen(),
-    ),
-  );
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const RoleSelectionScreen(),
+                              ),
+                            );
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF2F7D32),
+                            backgroundColor: trust,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -139,17 +128,15 @@ class LoginScreen extends StatelessWidget {
                         child: TextButton(
                           onPressed: () {
                             Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const SignupScreen(),
-      ),
-    );
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const SignupScreen(),
+                              ),
+                            );
                           },
-                          child: const Text(
+                          child: Text(
                             'Create an account',
-                            style: TextStyle(
-                              color: Color(0xFF2F7D32),
-                            ),
+                            style: TextStyle(color: trust),
                           ),
                         ),
                       ),
