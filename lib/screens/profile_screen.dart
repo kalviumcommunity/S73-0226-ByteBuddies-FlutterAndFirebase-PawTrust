@@ -3,24 +3,24 @@ import 'package:flutter/material.dart';
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
-  static const Color trustGreen = Color(0xFF2F7D32);
-
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final trust = theme.colorScheme.secondary;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
+      backgroundColor: theme.scaffoldBackgroundColor,
 
       body: Column(
         children: [
-          // 🟢 HERO HEADER (TRUST THEME)
           Container(
             height: 260,
             width: double.infinity,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  trustGreen,
-                  Color(0xFF4CAF50),
+                  trust,
+                  trust.withOpacity(0.85),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -53,14 +53,13 @@ class ProfileScreen extends StatelessWidget {
             ),
           ),
 
-          // ⚪ FLOATING CONTENT (SAME AS HOME)
           Expanded(
             child: Container(
               width: double.infinity,
               transform: Matrix4.translationValues(0, -30, 0),
-              decoration: const BoxDecoration(
-                color: Color(0xFFF9FAFB),
-                borderRadius: BorderRadius.vertical(
+              decoration: BoxDecoration(
+                color: theme.scaffoldBackgroundColor,
+                borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(32),
                 ),
               ),
@@ -68,7 +67,6 @@ class ProfileScreen extends StatelessWidget {
               child: ListView(
                 physics: const BouncingScrollPhysics(),
                 children: [
-                  // 🧊 PROFILE CARD
                   Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
@@ -86,17 +84,17 @@ class ProfileScreen extends StatelessWidget {
                       children: [
                         Container(
                           padding: const EdgeInsets.all(4),
-                          decoration: const BoxDecoration(
+                          decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: trustGreen,
+                            color: trust,
                           ),
-                          child: const CircleAvatar(
+                          child: CircleAvatar(
                             radius: 42,
-                            backgroundColor: Color(0xFFE8F5E9),
+                            backgroundColor: trust.withOpacity(0.12),
                             child: Icon(
                               Icons.person,
                               size: 44,
-                              color: trustGreen,
+                              color: trust,
                             ),
                           ),
                         ),
@@ -116,14 +114,13 @@ class ProfileScreen extends StatelessWidget {
 
                         const SizedBox(height: 24),
 
-                        // 📊 TRUST STATS
                         Row(
                           children: [
-                            _statItem('Trust', '92%'),
+                            _statItem(context, 'Trust', '92%'),
                             const SizedBox(width: 16),
-                            _statItem('Walks', '0'),
+                            _statItem(context, 'Walks', '0'),
                             const SizedBox(width: 16),
-                            _statItem('Pets', '1'),
+                            _statItem(context, 'Pets', '1'),
                           ],
                         ),
                       ],
@@ -132,26 +129,27 @@ class ProfileScreen extends StatelessWidget {
 
                   const SizedBox(height: 32),
 
-                  // ⚙️ ACCOUNT
                   _sectionTitle('Account'),
                   const SizedBox(height: 12),
 
                   _settingsTile(
+                    context,
                     icon: Icons.person_outline,
                     title: 'Edit Profile',
                   ),
                   _settingsTile(
+                    context,
                     icon: Icons.verified_user,
                     title: 'Verification Status',
                   ),
                   _settingsTile(
+                    context,
                     icon: Icons.notifications_none,
                     title: 'Notifications',
                   ),
 
                   const SizedBox(height: 32),
 
-                  // 🚪 LOGOUT (CALM, TRUSTY)
                   SizedBox(
                     width: double.infinity,
                     height: 52,
@@ -163,7 +161,7 @@ class ProfileScreen extends StatelessWidget {
                         );
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: trustGreen,
+                        backgroundColor: trust,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
@@ -188,15 +186,16 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  // 📊 STAT ITEM
-  Widget _statItem(String label, String value) {
+  Widget _statItem(BuildContext context, String label, String value) {
+    final theme = Theme.of(context);
+
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          color: const Color(0xFFF9FAFB),
+          color: theme.scaffoldBackgroundColor,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFE5E7EB)),
+          border: Border.all(color: theme.dividerColor),
         ),
         child: Column(
           children: [
@@ -218,11 +217,14 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  // ⚙️ SETTINGS TILE
-  Widget _settingsTile({
+  Widget _settingsTile(
+    BuildContext context, {
     required IconData icon,
     required String title,
   }) {
+    final theme = Theme.of(context);
+    final trust = theme.colorScheme.secondary;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -241,10 +243,10 @@ class ProfileScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: trustGreen.withOpacity(0.12),
+              color: trust.withOpacity(0.12),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: trustGreen),
+            child: Icon(icon, color: trust),
           ),
           const SizedBox(width: 16),
           Expanded(
