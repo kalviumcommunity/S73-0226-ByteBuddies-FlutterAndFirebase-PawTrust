@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
+import '../models/user_model.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -7,6 +10,15 @@ class ProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final trust = theme.colorScheme.secondary;
+    final authProvider = context.watch<AuthProvider>();
+    final user = authProvider.user;
+
+    // Get display values from user or show defaults
+    final displayName = user?.fullName ?? 'User';
+    final displayEmail = user?.email ?? '';
+    final displayRole = user?.role == UserRole.caregiver
+        ? 'Verified Caregiver'
+        : 'Verified Pet Owner';
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -18,10 +30,7 @@ class ProfileScreen extends StatelessWidget {
             width: double.infinity,
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [
-                  trust,
-                  trust.withOpacity(0.85),
-                ],
+                colors: [trust, trust.withOpacity(0.85)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -91,25 +100,42 @@ class ProfileScreen extends StatelessWidget {
                           child: CircleAvatar(
                             radius: 42,
                             backgroundColor: trust.withOpacity(0.12),
-                            child: Icon(
-                              Icons.person,
-                              size: 44,
-                              color: trust,
-                            ),
+                            child: Icon(Icons.person, size: 44, color: trust),
                           ),
                         ),
                         const SizedBox(height: 16),
-                        const Text(
-                          'John Doe',
-                          style: TextStyle(
+                        Text(
+                          displayName,
+                          style: const TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
+                        const SizedBox(height: 4),
+                        Text(
+                          displayEmail,
+                          style: const TextStyle(
+                            color: Colors.black45,
+                            fontSize: 14,
+                          ),
+                        ),
                         const SizedBox(height: 6),
-                        const Text(
-                          'Verified Pet Owner',
-                          style: TextStyle(color: Colors.black54),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: trust.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            displayRole,
+                            style: TextStyle(
+                              color: trust,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                         ),
 
                         const SizedBox(height: 24),
@@ -154,14 +180,54 @@ class ProfileScreen extends StatelessWidget {
                     width: double.infinity,
                     height: 52,
                     child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.popUntil(
-                          context,
-                          (route) => route.isFirst,
+                      onPressed: () async {
+                        // Show confirmation dialog
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            title: const Text('Logout'),
+                            content: const Text(
+                              'Are you sure you want to logout?',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx, false),
+                                child: const Text('Cancel'),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx, true),
+                                child: const Text('Logout'),
+                              ),
+                            ],
+                          ),
                         );
+
+                        if (confirm == true && context.mounted) {
+                          final authProvider = context.read<AuthProvider>();
+                          final success = await authProvider.signOut();
+
+                          if (!context.mounted) return;
+
+                          if (success) {
+                            // Navigate to root and let AuthWrapper handle the redirect
+                            Navigator.of(
+                              context,
+                            ).pushNamedAndRemoveUntil('/', (route) => false);
+                          } else {
+                            // Show error snackbar if logout failed
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  authProvider.errorMessage ?? 'Logout failed',
+                                ),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        }
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: trust,
+                        backgroundColor: Colors.red.shade400,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
@@ -201,16 +267,10 @@ class ProfileScreen extends StatelessWidget {
           children: [
             Text(
               value,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 4),
-            Text(
-              label,
-              style: const TextStyle(color: Colors.black54),
-            ),
+            Text(label, style: const TextStyle(color: Colors.black54)),
           ],
         ),
       ),
@@ -232,10 +292,7 @@ class ProfileScreen extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 12,
-          ),
+          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 12),
         ],
       ),
       child: Row(
@@ -252,10 +309,7 @@ class ProfileScreen extends StatelessWidget {
           Expanded(
             child: Text(
               title,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
           ),
           const Icon(Icons.chevron_right),
@@ -267,10 +321,7 @@ class ProfileScreen extends StatelessWidget {
   Widget _sectionTitle(String title) {
     return Text(
       title,
-      style: const TextStyle(
-        fontSize: 18,
-        fontWeight: FontWeight.bold,
-      ),
+      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
     );
   }
 }

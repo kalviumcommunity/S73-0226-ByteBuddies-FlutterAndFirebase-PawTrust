@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
-import 'role_selection_screen.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -39,13 +38,8 @@ class _SignupScreenState extends State<SignupScreen> {
 
     if (!mounted) return;
 
-    if (success) {
-      // Navigate to role selection
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const RoleSelectionScreen()),
-      );
-    } else {
+    // AuthWrapper will handle navigation on success (to RoleSelectionScreen)
+    if (!success) {
       // Show error snackbar
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

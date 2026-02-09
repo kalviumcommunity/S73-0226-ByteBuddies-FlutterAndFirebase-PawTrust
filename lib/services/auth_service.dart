@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import '../models/user_model.dart';
 
 /// Result class for Auth operations
@@ -28,11 +29,38 @@ class AuthService {
   /// Collection reference for users
   CollectionReference get _usersCollection => _firestore.collection('users');
 
+  /// Collection reference for audit logs
+  CollectionReference get _auditLogsCollection =>
+      _firestore.collection('audit_logs');
+
   /// Get current Firebase user
   User? get currentUser => _auth.currentUser;
 
   /// Stream of auth state changes
   Stream<User?> get authStateChanges => _auth.authStateChanges();
+
+  /// Log audit event to Firestore
+  Future<void> _logAuditEvent({
+    required String action,
+    required String userId,
+    required bool success,
+    String? errorMessage,
+    Map<String, dynamic>? metadata,
+  }) async {
+    try {
+      await _auditLogsCollection.add({
+        'action': action,
+        'userId': userId,
+        'timestamp': FieldValue.serverTimestamp(),
+        'success': success,
+        'errorMessage': errorMessage,
+        'metadata': metadata,
+      });
+    } catch (e) {
+      // Don't fail the main operation if audit logging fails
+      debugPrint('Audit logging failed: $e');
+    }
+  }
 
   /// Sign up with email and password
   /// Creates user in Firebase Auth and stores profile in Firestore
@@ -60,12 +88,21 @@ class AuthService {
         fullName: fullName.trim(),
         role: UserRole.owner, // Default role, will be updated
         createdAt: DateTime.now(),
+        onboardingComplete: false, // Will be set true after role selection
       );
 
       // 3. Store user document in Firestore
       await _usersCollection
           .doc(credential.user!.uid)
           .set(userModel.toFirestore());
+
+      // 4. Log audit event
+      await _logAuditEvent(
+        action: 'signup',
+        userId: credential.user!.uid,
+        success: true,
+        metadata: {'email': email.trim()},
+      );
 
       return AuthResult.success(userModel);
     } on FirebaseAuthException catch (e) {
@@ -96,6 +133,13 @@ class AuthService {
         return AuthResult.failure('User profile not found');
       }
 
+      // Log audit event
+      await _logAuditEvent(
+        action: 'login',
+        userId: credential.user!.uid,
+        success: true,
+      );
+
       return AuthResult.success(userModel);
     } on FirebaseAuthException catch (e) {
       return AuthResult.failure(_getAuthErrorMessage(e.code));
@@ -104,9 +148,35 @@ class AuthService {
     }
   }
 
-  /// Sign out
-  Future<void> signOut() async {
-    await _auth.signOut();
+  /// Sign out with error handling and audit logging
+  /// Returns true if successful, false otherwise
+  Future<({bool success, String? errorMessage})> signOut() async {
+    final userId = _auth.currentUser?.uid ?? 'unknown';
+
+    try {
+      await _auth.signOut();
+
+      // Log successful logout
+      await _logAuditEvent(action: 'logout', userId: userId, success: true);
+
+      return (success: true, errorMessage: null);
+    } catch (e) {
+      final errorMsg = 'Failed to sign out: $e';
+      debugPrint(errorMsg);
+
+      // Log failed logout attempt
+      await _logAuditEvent(
+        action: 'logout',
+        userId: userId,
+        success: false,
+        errorMessage: errorMsg,
+      );
+
+      return (
+        success: false,
+        errorMessage: 'Unable to sign out. Please try again.',
+      );
+    }
   }
 
   /// Get user data from Firestore
@@ -118,18 +188,30 @@ class AuthService {
       }
       return null;
     } catch (e) {
+      debugPrint('Failed to get user data: $e');
       return null;
     }
   }
 
-  /// Update user role in Firestore
+  /// Update user role in Firestore and mark onboarding complete
   Future<bool> updateUserRole(String uid, UserRole role) async {
     try {
       await _usersCollection.doc(uid).update({
         'role': role == UserRole.caregiver ? 'caregiver' : 'owner',
+        'onboardingComplete': true,
       });
+
+      // Log role selection
+      await _logAuditEvent(
+        action: 'role_selection',
+        userId: uid,
+        success: true,
+        metadata: {'role': role == UserRole.caregiver ? 'caregiver' : 'owner'},
+      );
+
       return true;
     } catch (e) {
+      debugPrint('Failed to update user role: $e');
       return false;
     }
   }
