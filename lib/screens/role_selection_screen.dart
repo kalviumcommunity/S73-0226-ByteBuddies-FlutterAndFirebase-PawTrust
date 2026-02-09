@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
+import '../models/user_model.dart';
 import 'home_screen.dart';
 
 class RoleSelectionScreen extends StatefulWidget {
@@ -10,6 +13,38 @@ class RoleSelectionScreen extends StatefulWidget {
 
 class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
   String selectedRole = '';
+  bool _isLoading = false;
+
+  Future<void> _handleContinue() async {
+    if (selectedRole.isEmpty) return;
+
+    setState(() => _isLoading = true);
+
+    final authProvider = context.read<AuthProvider>();
+    final role = selectedRole == 'caregiver'
+        ? UserRole.caregiver
+        : UserRole.owner;
+
+    final success = await authProvider.updateRole(role);
+
+    if (!mounted) return;
+
+    setState(() => _isLoading = false);
+
+    if (success) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(authProvider.errorMessage ?? 'Failed to save role'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,9 +66,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
             ),
 
             Positioned.fill(
-              child: Container(
-                color: Colors.black.withOpacity(0.45),
-              ),
+              child: Container(color: Colors.black.withOpacity(0.45)),
             ),
 
             Column(
@@ -58,10 +91,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                   padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                   child: Text(
                     'This helps us personalize your experience',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 16,
-                    ),
+                    style: TextStyle(color: Colors.white70, fontSize: 16),
                   ),
                 ),
 
@@ -107,32 +137,34 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                         width: double.infinity,
                         height: 48,
                         child: ElevatedButton(
-                          onPressed: selectedRole.isEmpty
+                          onPressed: (selectedRole.isEmpty || _isLoading)
                               ? null
-                              : () {
-                                  Navigator.pushReplacement(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => const HomeScreen(),
-                                    ),
-                                  );
-                                },
+                              : _handleContinue,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: trust,
-                            disabledBackgroundColor:
-                                theme.disabledColor.withOpacity(0.3),
+                            disabledBackgroundColor: theme.disabledColor
+                                .withOpacity(0.3),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          child: const Text(
-                            'Continue',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                          child: _isLoading
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Text(
+                                  'Continue',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
                         ),
                       ),
                     ],

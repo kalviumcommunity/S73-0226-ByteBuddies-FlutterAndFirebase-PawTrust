@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "583385683146",
+    "project_id": "pawtrust-fc777",
+    "storage_bucket": "pawtrust-fc777.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:583385683146:android:55af0ac23ba64856325033",
+        "android_client_info": {
+          "package_name": "com.example.sprint_2"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCJoENbfUje8qWCsMa5XPiuXhsB4XUE058"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
