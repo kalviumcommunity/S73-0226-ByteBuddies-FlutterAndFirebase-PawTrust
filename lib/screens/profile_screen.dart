@@ -203,12 +203,26 @@ class ProfileScreen extends StatelessWidget {
                         );
 
                         if (confirm == true && context.mounted) {
-                          await context.read<AuthProvider>().signOut();
-                          // Navigate to root and let AuthWrapper handle the redirect
-                          if (context.mounted) {
+                          final authProvider = context.read<AuthProvider>();
+                          final success = await authProvider.signOut();
+
+                          if (!context.mounted) return;
+
+                          if (success) {
+                            // Navigate to root and let AuthWrapper handle the redirect
                             Navigator.of(
                               context,
                             ).pushNamedAndRemoveUntil('/', (route) => false);
+                          } else {
+                            // Show error snackbar if logout failed
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  authProvider.errorMessage ?? 'Logout failed',
+                                ),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
                           }
                         }
                       },

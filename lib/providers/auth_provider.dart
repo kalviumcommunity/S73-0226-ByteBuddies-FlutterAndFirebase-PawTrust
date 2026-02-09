@@ -39,13 +39,28 @@ class AuthProvider extends ChangeNotifier {
     if (firebaseUser == null) {
       _status = AuthStatus.unauthenticated;
       _user = null;
+      _errorMessage = null;
     } else {
-      // Fetch user data from Firestore
-      _user = await _authService.getUserData(firebaseUser.uid);
-      if (_user != null) {
-        _status = AuthStatus.authenticated;
-      } else {
-        _status = AuthStatus.unauthenticated;
+      try {
+        // Fetch user data from Firestore
+        _user = await _authService.getUserData(firebaseUser.uid);
+        if (_user != null) {
+          // Check if onboarding is complete
+          if (!_user!.onboardingComplete) {
+            _status = AuthStatus.needsRoleSelection;
+          } else {
+            _status = AuthStatus.authenticated;
+          }
+          _errorMessage = null;
+        } else {
+          // User document not found - set error state with message
+          _status = AuthStatus.error;
+          _errorMessage = 'User profile not found. Please sign up again.';
+        }
+      } catch (e) {
+        _status = AuthStatus.error;
+        _errorMessage = 'Failed to load user data. Please try again.';
+        debugPrint('Error in _onAuthStateChanged: $e');
       }
     }
     notifyListeners();
@@ -90,7 +105,12 @@ class AuthProvider extends ChangeNotifier {
 
     if (result.success) {
       _user = result.user;
-      _status = AuthStatus.authenticated;
+      // Check if onboarding is complete
+      if (_user != null && !_user!.onboardingComplete) {
+        _status = AuthStatus.needsRoleSelection;
+      } else {
+        _status = AuthStatus.authenticated;
+      }
       notifyListeners();
       return true;
     } else {
@@ -111,7 +131,7 @@ class AuthProvider extends ChangeNotifier {
     final success = await _authService.updateUserRole(_user!.uid, role);
 
     if (success) {
-      _user = _user!.copyWith(role: role);
+      _user = _user!.copyWith(role: role, onboardingComplete: true);
       _status = AuthStatus.authenticated;
     } else {
       _status = AuthStatus.error;
@@ -121,17 +141,28 @@ class AuthProvider extends ChangeNotifier {
     return success;
   }
 
-  /// Sign out
-  Future<void> signOut() async {
-    await _authService.signOut();
-    _user = null;
-    _status = AuthStatus.unauthenticated;
+  /// Sign out with error handling
+  Future<bool> signOut() async {
+    final result = await _authService.signOut();
+
+    if (result.success) {
+      _user = null;
+      _status = AuthStatus.unauthenticated;
+      _errorMessage = null;
+    } else {
+      _errorMessage = result.errorMessage;
+      // Don't change status on logout failure - user is still technically logged in
+    }
     notifyListeners();
+    return result.success;
   }
 
   /// Clear error message
   void clearError() {
     _errorMessage = null;
+    if (_status == AuthStatus.error) {
+      _status = AuthStatus.unauthenticated;
+    }
     notifyListeners();
   }
 }

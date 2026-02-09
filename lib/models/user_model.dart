@@ -12,6 +12,7 @@ class UserModel {
   final UserRole role;
   final DateTime createdAt;
   final String? profileImageUrl;
+  final bool onboardingComplete;
 
   UserModel({
     required this.uid,
@@ -20,6 +21,7 @@ class UserModel {
     required this.role,
     required this.createdAt,
     this.profileImageUrl,
+    this.onboardingComplete = false,
   });
 
   /// Create UserModel from Firestore document
@@ -32,6 +34,7 @@ class UserModel {
       role: data['role'] == 'caregiver' ? UserRole.caregiver : UserRole.owner,
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       profileImageUrl: data['profileImageUrl'],
+      onboardingComplete: data['onboardingComplete'] ?? false,
     );
   }
 
@@ -43,6 +46,7 @@ class UserModel {
       'role': role == UserRole.caregiver ? 'caregiver' : 'owner',
       'createdAt': Timestamp.fromDate(createdAt),
       'profileImageUrl': profileImageUrl,
+      'onboardingComplete': onboardingComplete,
     };
   }
 
@@ -54,6 +58,7 @@ class UserModel {
     UserRole? role,
     DateTime? createdAt,
     String? profileImageUrl,
+    bool? onboardingComplete,
   }) {
     return UserModel(
       uid: uid ?? this.uid,
@@ -62,11 +67,12 @@ class UserModel {
       role: role ?? this.role,
       createdAt: createdAt ?? this.createdAt,
       profileImageUrl: profileImageUrl ?? this.profileImageUrl,
+      onboardingComplete: onboardingComplete ?? this.onboardingComplete,
     );
   }
 
   @override
   String toString() {
-    return 'UserModel(uid: $uid, email: $email, fullName: $fullName, role: $role)';
+    return 'UserModel(uid: $uid, email: $email, fullName: $fullName, role: $role, onboardingComplete: $onboardingComplete)';
   }
 }
