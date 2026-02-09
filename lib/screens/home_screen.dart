@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
 import 'activity_screen.dart';
 import 'pets_screen.dart';
 import 'profile_screen.dart';
@@ -37,10 +39,7 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: theme.scaffoldBackgroundColor,
 
       // 🔹 TAB CONTENT
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
+      body: IndexedStack(index: _currentIndex, children: _screens),
 
       // 🟢 FAB → ADD PET
       floatingActionButton: Container(
@@ -59,16 +58,13 @@ class _HomeScreenState extends State<HomeScreen> {
           onPressed: () {
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (_) => const AddPetScreen(),
-              ),
+              MaterialPageRoute(builder: (_) => const AddPetScreen()),
             );
           },
           child: const Icon(Icons.pets),
         ),
       ),
-      floatingActionButtonLocation:
-          FloatingActionButtonLocation.centerDocked,
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
 
       // 🔻 BOTTOM NAV
       bottomNavigationBar: Padding(
@@ -145,36 +141,38 @@ class _HomeDashboard extends StatelessWidget {
           width: double.infinity,
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [
-                primary,
-                primary.withOpacity(0.85),
-              ],
+              colors: [primary, primary.withOpacity(0.85)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
           ),
           padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
-          child: const Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Welcome Back 👋',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 16,
-                ),
-              ),
-              SizedBox(height: 6),
-              Text(
-                'Your pet’s safety,\nour priority.',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                  height: 1.3,
-                ),
-              ),
-            ],
+          child: Builder(
+            builder: (context) {
+              final authProvider = context.watch<AuthProvider>();
+              final fullName = authProvider.user?.fullName ?? 'User';
+              final firstName = fullName.split(' ').first;
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Welcome Back, $firstName 👋',
+                    style: const TextStyle(color: Colors.white70, fontSize: 16),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Your pet\'s safety,\nour priority.',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                      height: 1.3,
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ),
 
@@ -184,9 +182,7 @@ class _HomeDashboard extends StatelessWidget {
             transform: Matrix4.translationValues(0, -30, 0),
             decoration: const BoxDecoration(
               color: Color(0xFFF9FAFB),
-              borderRadius: BorderRadius.vertical(
-                top: Radius.circular(32),
-              ),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
             ),
             padding: const EdgeInsets.all(24),
             child: ListView(
@@ -343,10 +339,7 @@ class _HomeDashboard extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 12,
-          ),
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 12),
         ],
       ),
       child: Row(
@@ -364,12 +357,15 @@ class _HomeDashboard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 16)),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
                 const SizedBox(height: 4),
-                Text(subtitle,
-                    style: const TextStyle(color: Colors.black54)),
+                Text(subtitle, style: const TextStyle(color: Colors.black54)),
               ],
             ),
           ),

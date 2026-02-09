@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'screens/login_screen.dart';
+import 'screens/auth_wrapper.dart';
 
 class PawTrustApp extends StatelessWidget {
   const PawTrustApp({super.key});
@@ -51,7 +51,8 @@ class PawTrustApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const LoginScreen(),
+      initialRoute: '/',
+      routes: {'/': (context) => const AuthWrapper()},
     );
   }
 }
