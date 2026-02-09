@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'add_pet_screen.dart';
 
 class PetsScreen extends StatelessWidget {
   const PetsScreen({super.key});
@@ -31,7 +32,14 @@ class PetsScreen extends StatelessWidget {
               children: [
                 IconButton(
                   icon: const Icon(Icons.arrow_back, color: Colors.white),
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const AddPetScreen(),
+                    ),
+                  );
+                },
                 ),
                 const Expanded(
                   child: Center(
@@ -72,7 +80,14 @@ class PetsScreen extends StatelessWidget {
                     width: double.infinity,
                     height: 52,
                     child: ElevatedButton.icon(
-                      onPressed: () {},
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const AddPetScreen(),
+                          ),
+                        );
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: trust,
                         shape: RoundedRectangleBorder(
