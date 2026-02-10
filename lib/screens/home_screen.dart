@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
+import '../providers/pet_provider.dart';
 
 import 'activity_screen.dart';
 import 'pets_screen.dart';
@@ -27,6 +30,15 @@ class _HomeScreenState extends State<HomeScreen> {
       const PetsScreen(),
       const ProfileScreen(),
     ];
+    
+    // Fetch pets on home screen load
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authProvider = context.read<AuthProvider>();
+      final petProvider = context.read<PetProvider>();
+      if (authProvider.user != null) {
+        petProvider.fetchPets(authProvider.user!.uid);
+      }
+    });
   }
 
   @override

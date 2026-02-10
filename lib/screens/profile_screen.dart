@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import '../providers/pet_provider.dart';
 import '../models/user_model.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -136,6 +137,86 @@ class ProfileScreen extends StatelessWidget {
               child: ListView(
                 physics: const BouncingScrollPhysics(),
                 children: [
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.08),
+                          blurRadius: 24,
+                          offset: const Offset(0, 12),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: trust,
+                          ),
+                          child: CircleAvatar(
+                            radius: 42,
+                            backgroundColor: trust.withOpacity(0.12),
+                            child: Icon(Icons.person, size: 44, color: trust),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          displayName,
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          displayEmail,
+                          style: const TextStyle(
+                            color: Colors.black45,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: trust.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            displayRole,
+                            style: TextStyle(
+                              color: trust,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        Row(
+                          children: [
+                            _statItem(context, 'Trust', '92%'),
+                            const SizedBox(width: 16),
+                            _statItem(context, 'Walks', '0'),
+                            const SizedBox(width: 16),
+                            Builder(
+                              builder: (context) {
+                                final petCount = context.watch<PetProvider>().petCount;
+                                return _statItem(context, 'Pets', '$petCount');
+                              },
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   // 📊 STATS CARDS
                   Row(
                     children: [

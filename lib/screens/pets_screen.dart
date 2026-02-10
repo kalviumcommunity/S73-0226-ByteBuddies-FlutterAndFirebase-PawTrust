@@ -1,17 +1,79 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/pet_provider.dart';
+import '../providers/auth_provider.dart';
+import '../models/pet_model.dart';
 import 'add_pet_screen.dart';
 
-class PetsScreen extends StatelessWidget {
+class PetsScreen extends StatefulWidget {
   const PetsScreen({super.key});
+
+  @override
+  State<PetsScreen> createState() => _PetsScreenState();
+}
+
+class _PetsScreenState extends State<PetsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _loadPets();
+  }
+
+  Future<void> _loadPets() async {
+    final authProvider = context.read<AuthProvider>();
+    final petProvider = context.read<PetProvider>();
+    
+    if (authProvider.user != null) {
+      await petProvider.fetchPets(authProvider.user!.uid);
+    }
+  }
+
+  Future<void> _handleDeletePet(String petId, String petName) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Pet'),
+        content: Text('Are you sure you want to remove $petName?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      final petProvider = context.read<PetProvider>();
+      final success = await petProvider.deletePet(petId);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(success
+                ? 'Pet removed successfully'
+                : 'Failed to remove pet'),
+            backgroundColor: success ? Colors.green : Colors.red,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final green = theme.colorScheme.tertiary;
+    final trust = theme.colorScheme.secondary;
+    final petProvider = context.watch<PetProvider>();
+
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-
       body: Column(
         children: [
           // 🔹 HEADER WITH GRADIENT
@@ -20,7 +82,8 @@ class PetsScreen extends StatelessWidget {
             width: double.infinity,
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [green, green.withOpacity(0.85)],
+                colors: [trust, trust.withOpacity(0.85)],
+
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -30,10 +93,14 @@ class PetsScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
+                IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  onPressed: () => Navigator.pop(context),
+                ),
+                const Expanded(
+                  child: Center(
+                    child: Text(
+
                       'My Pets',
                       style: TextStyle(
                         color: Colors.white,
@@ -88,6 +155,7 @@ class PetsScreen extends StatelessWidget {
             ),
           ),
 
+
           // ⚪ CONTENT AREA
           Expanded(
             child: Container(
@@ -100,80 +168,129 @@ class PetsScreen extends StatelessWidget {
                 ),
               ),
               padding: const EdgeInsets.all(24),
-              child: ListView(
-                physics: const BouncingScrollPhysics(),
-                children: [
-                  // 🎨 EMPTY STATE
-                  _EmptyStateCard(green),
-                  const SizedBox(height: 36),
-
-                  // 📌 BENEFITS SECTION
-                  Text(
-                    'Why Add Pets?',
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  _BenefitCard(
-                    icon: Icons.location_on_rounded,
-                    title: 'Track Location',
-                    subtitle: 'Real-time GPS tracking during walks',
-                    color: theme.colorScheme.primary,
-                  ),
-                  const SizedBox(height: 12),
-                  _BenefitCard(
-                    icon: Icons.auto_stories_rounded,
-                    title: 'Activity History',
-                    subtitle: 'Keep detailed records of all activities',
-                    color: theme.colorScheme.secondary,
-                  ),
-                  const SizedBox(height: 12),
-                  _BenefitCard(
-                    icon: Icons.people_alt_rounded,
-                    title: 'Trusted Caregivers',
-                    subtitle: 'Connect with verified pet caregivers',
-                    color: green,
-                  ),
-                  const SizedBox(height: 36),
-
-                  // 🔘 ADD PET BUTTON
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const AddPetScreen(),
+              child: petProvider.isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : RefreshIndicator(
+                      onRefresh: _loadPets,
+                      child: ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        children: [
+                          if (!petProvider.hasPets) ...[
+                            _emptyState(context),
+                            const SizedBox(height: 32),
+                          ] else ...[
+                            ...petProvider.pets.map((pet) => 
+                              _petCard(context, pet, trust)
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+                          SizedBox(
+                            width: double.infinity,
+                            height: 52,
+                            child: ElevatedButton.icon(
+                              onPressed: () async {
+                                await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const AddPetScreen(),
+                                  ),
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: trust,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                elevation: 4,
+                              ),
+                              icon: const Icon(Icons.add, color: Colors.white),
+                              label: const Text(
+                                'Add a Pet',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
                           ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: green,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        elevation: 4,
-                      ),
-                      icon: const Icon(Icons.add_rounded, color: Colors.white, size: 24),
-                      label: const Text(
-                        'Add Your First Pet',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        ],
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 24),
-                ],
-              ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _petCard(BuildContext context, PetModel pet, Color trust) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Pet Image
+          Container(
+            width: 70,
+            height: 70,
+            decoration: BoxDecoration(
+              color: trust.withOpacity(0.12),
+              shape: BoxShape.circle,
+              image: pet.imageUrl != null
+                  ? DecorationImage(
+                      image: NetworkImage(pet.imageUrl!),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
+            ),
+            child: pet.imageUrl == null
+                ? Icon(Icons.pets, size: 32, color: trust)
+                : null,
+          ),
+          const SizedBox(width: 16),
+          
+          // Pet Info
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  pet.name,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${pet.typeDisplayName}${pet.breed != null ? ' • ${pet.breed}' : ''}',
+                  style: const TextStyle(color: Colors.black54),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '${pet.age} ${pet.age == 1 ? 'year' : 'years'} old • ${pet.genderDisplayName}',
+                  style: const TextStyle(color: Colors.black54, fontSize: 13),
+                ),
+              ],
+            ),
+          ),
+          
+          // Delete Button
+          IconButton(
+            icon: const Icon(Icons.delete_outline, color: Colors.red),
+            onPressed: () => _handleDeletePet(pet.id, pet.name),
           ),
         ],
       ),
