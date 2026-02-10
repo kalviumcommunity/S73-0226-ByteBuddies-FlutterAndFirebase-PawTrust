@@ -20,6 +20,11 @@ class AuthWrapper extends StatelessWidget {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
+    // If user just completed role selection, go to login
+    if (authProvider.justCompletedRoleSelection) {
+      return LoginScreen(isNewUser: true);
+    }
+
     // Route based on auth status
     switch (authProvider.status) {
       case AuthStatus.authenticated:
