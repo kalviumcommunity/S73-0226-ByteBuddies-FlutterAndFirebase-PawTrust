@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import '../providers/pet_provider.dart';
 import '../models/user_model.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -146,7 +147,12 @@ class ProfileScreen extends StatelessWidget {
                             const SizedBox(width: 16),
                             _statItem(context, 'Walks', '0'),
                             const SizedBox(width: 16),
-                            _statItem(context, 'Pets', '1'),
+                            Builder(
+                              builder: (context) {
+                                final petCount = context.watch<PetProvider>().petCount;
+                                return _statItem(context, 'Pets', '$petCount');
+                              },
+                            ),
                           ],
                         ),
                       ],

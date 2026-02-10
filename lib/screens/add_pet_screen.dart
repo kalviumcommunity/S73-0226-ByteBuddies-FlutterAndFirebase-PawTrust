@@ -1,15 +1,123 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import '../models/pet_model.dart';
+import '../providers/pet_provider.dart';
+import '../providers/auth_provider.dart';
 
-class AddPetScreen extends StatelessWidget {
+class AddPetScreen extends StatefulWidget {
   const AddPetScreen({super.key});
 
+  @override
+  State<AddPetScreen> createState() => _AddPetScreenState();
+}
+
+class _AddPetScreenState extends State<AddPetScreen> {
   static const Color trustGreen = Color(0xFF2F7D32);
+
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _breedController = TextEditingController();
+  final _ageController = TextEditingController();
+
+  PetType _selectedType = PetType.dog;
+  PetGender _selectedGender = PetGender.male;
+  File? _imageFile;
+  bool _isLoading = false;
+
+  final ImagePicker _picker = ImagePicker();
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _breedController.dispose();
+    _ageController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
+      );
+
+      if (image != null) {
+        setState(() {
+          _imageFile = File(image.path);
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to pick image: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleSavePet() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final authProvider = context.read<AuthProvider>();
+    final petProvider = context.read<PetProvider>();
+
+    if (authProvider.user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please login to add a pet'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    final success = await petProvider.addPet(
+      name: _nameController.text.trim(),
+      type: _selectedType,
+      breed: _breedController.text.trim().isEmpty
+          ? null
+          : _breedController.text.trim(),
+      age: int.parse(_ageController.text.trim()),
+      gender: _selectedGender,
+      ownerId: authProvider.user!.uid,
+      imageFile: _imageFile,
+    );
+
+    setState(() => _isLoading = false);
+
+    if (!mounted) return;
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Pet added successfully! 🐾'),
+          backgroundColor: trustGreen,
+        ),
+      );
+      Navigator.pop(context);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(petProvider.errorMessage ?? 'Failed to add pet'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
-
       body: Column(
         children: [
           Container(
@@ -17,10 +125,7 @@ class AddPetScreen extends StatelessWidget {
             width: double.infinity,
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [
-                  trustGreen,
-                  Color(0xFF4CAF50),
-                ],
+                colors: [trustGreen, Color(0xFF4CAF50)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -51,7 +156,6 @@ class AddPetScreen extends StatelessWidget {
               ],
             ),
           ),
-
           Expanded(
             child: Container(
               width: double.infinity,
@@ -63,49 +167,155 @@ class AddPetScreen extends StatelessWidget {
                 ),
               ),
               padding: const EdgeInsets.all(24),
-              child: ListView(
-                physics: const BouncingScrollPhysics(),
-                children: [
-                  _inputField(label: 'Pet Name'),
-                  const SizedBox(height: 16),
-
-                  _inputField(label: 'Pet Type (Dog / Cat / Other)'),
-                  const SizedBox(height: 16),
-
-                  _inputField(label: 'Breed (Optional)'),
-                  const SizedBox(height: 16),
-
-                  _inputField(label: 'Age'),
-                  const SizedBox(height: 16),
-
-                  _inputField(label: 'Gender'),
-                  const SizedBox(height: 32),
-
-                  SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: trustGreen,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        elevation: 4,
-                      ),
-                      child: const Text(
-                        'Save Pet',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
+              child: Form(
+                key: _formKey,
+                child: ListView(
+                  physics: const BouncingScrollPhysics(),
+                  children: [
+                    // Image Picker
+                    Center(
+                      child: GestureDetector(
+                        onTap: _pickImage,
+                        child: Container(
+                          width: 120,
+                          height: 120,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: trustGreen, width: 3),
+                            image: _imageFile != null
+                                ? DecorationImage(
+                                    image: FileImage(_imageFile!),
+                                    fit: BoxFit.cover,
+                                  )
+                                : null,
+                          ),
+                          child: _imageFile == null
+                              ? const Icon(Icons.add_a_photo,
+                                  size: 40, color: trustGreen)
+                              : null,
                         ),
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 8),
+                    const Center(
+                      child: Text(
+                        'Tap to add photo',
+                        style: TextStyle(color: Colors.black54, fontSize: 12),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Pet Name
+                    _buildTextField(
+                      controller: _nameController,
+                      label: 'Pet Name',
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Please enter pet name';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Pet Type
+                    _buildDropdown<PetType>(
+                      label: 'Pet Type',
+                      value: _selectedType,
+                      items: PetType.values,
+                      itemLabel: (type) {
+                        switch (type) {
+                          case PetType.dog:
+                            return 'Dog';
+                          case PetType.cat:
+                            return 'Cat';
+                          case PetType.bird:
+                            return 'Bird';
+                          case PetType.rabbit:
+                            return 'Rabbit';
+                          case PetType.other:
+                            return 'Other';
+                        }
+                      },
+                      onChanged: (value) {
+                        setState(() => _selectedType = value!);
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Breed
+                    _buildTextField(
+                      controller: _breedController,
+                      label: 'Breed (Optional)',
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Age
+                    _buildTextField(
+                      controller: _ageController,
+                      label: 'Age (years)',
+                      keyboardType: TextInputType.number,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Please enter age';
+                        }
+                        final age = int.tryParse(value.trim());
+                        if (age == null || age < 0 || age > 50) {
+                          return 'Please enter a valid age (0-50)';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Gender
+                    _buildDropdown<PetGender>(
+                      label: 'Gender',
+                      value: _selectedGender,
+                      items: PetGender.values,
+                      itemLabel: (gender) =>
+                          gender == PetGender.male ? 'Male' : 'Female',
+                      onChanged: (value) {
+                        setState(() => _selectedGender = value!);
+                      },
+                    ),
+                    const SizedBox(height: 32),
+
+                    // Save Button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 52,
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _handleSavePet,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: trustGreen,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          elevation: 4,
+                        ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text(
+                                'Save Pet',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -114,18 +324,24 @@ class AddPetScreen extends StatelessWidget {
     );
   }
 
-  Widget _inputField({required String label}) {
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    TextInputType? keyboardType,
+    String? Function(String?)? validator,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-          ),
+          style: const TextStyle(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
-        TextField(
+        TextFormField(
+          controller: controller,
+          keyboardType: keyboardType,
+          validator: validator,
           decoration: InputDecoration(
             hintText: label,
             filled: true,
@@ -142,6 +358,54 @@ class AddPetScreen extends StatelessWidget {
               borderRadius: BorderRadius.circular(14),
               borderSide: const BorderSide(color: trustGreen),
             ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: Colors.red),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDropdown<T>({
+    required String label,
+    required T value,
+    required List<T> items,
+    required String Function(T) itemLabel,
+    required void Function(T?) onChanged,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFE5E7EB)),
+          ),
+          child: DropdownButtonFormField<T>(
+            value: value,
+            decoration: InputDecoration(
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              border: InputBorder.none,
+              filled: true,
+              fillColor: Colors.white,
+            ),
+            borderRadius: BorderRadius.circular(14),
+            items: items.map((item) {
+              return DropdownMenuItem<T>(
+                value: item,
+                child: Text(itemLabel(item)),
+              );
+            }).toList(),
+            onChanged: onChanged,
           ),
         ),
       ],
