@@ -14,7 +14,22 @@ class AddPetScreen extends StatefulWidget {
 }
 
 class _AddPetScreenState extends State<AddPetScreen> {
-  static const Color trustGreen = Color(0xFF2F7D32);
+
+  late final List<TextEditingController> _controllers;
+
+  @override
+  void initState() {
+    super.initState();
+    _controllers = List.generate(5, (_) => TextEditingController());
+  }
+
+  @override
+  void dispose() {
+    for (var controller in _controllers) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
 
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
@@ -116,20 +131,27 @@ class _AddPetScreenState extends State<AddPetScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final green = theme.colorScheme.tertiary;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
+
+      backgroundColor: theme.scaffoldBackgroundColor,
+
       body: Column(
         children: [
+          // 🔹 HEADER WITH GRADIENT
           Container(
             height: 220,
             width: double.infinity,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [trustGreen, Color(0xFF4CAF50)],
+
+                colors: [green, green.withOpacity(0.85)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius: BorderRadius.vertical(
+              borderRadius: const BorderRadius.vertical(
                 bottom: Radius.circular(32),
               ),
             ),
@@ -156,13 +178,15 @@ class _AddPetScreenState extends State<AddPetScreen> {
               ],
             ),
           ),
+
+          // ⚪ FORM CONTENT
           Expanded(
             child: Container(
               width: double.infinity,
               transform: Matrix4.translationValues(0, -30, 0),
-              decoration: const BoxDecoration(
-                color: Color(0xFFF9FAFB),
-                borderRadius: BorderRadius.vertical(
+              decoration: BoxDecoration(
+                color: theme.scaffoldBackgroundColor,
+                borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(32),
                 ),
               ),
@@ -194,6 +218,7 @@ class _AddPetScreenState extends State<AddPetScreen> {
                               ? const Icon(Icons.add_a_photo,
                                   size: 40, color: trustGreen)
                               : null,
+
                         ),
                       ),
                     ),
@@ -294,6 +319,7 @@ class _AddPetScreenState extends State<AddPetScreen> {
                             borderRadius: BorderRadius.circular(16),
                           ),
                           elevation: 4,
+
                         ),
                         child: _isLoading
                             ? const SizedBox(
@@ -314,8 +340,10 @@ class _AddPetScreenState extends State<AddPetScreen> {
                               ),
                       ),
                     ),
-                  ],
-                ),
+
+                  ),
+                  const SizedBox(height: 20),
+                ],
               ),
             ),
           ),
@@ -324,12 +352,15 @@ class _AddPetScreenState extends State<AddPetScreen> {
     );
   }
 
-  Widget _buildTextField({
-    required TextEditingController controller,
+  Widget _buildInputField(
+    BuildContext context, {
     required String label,
-    TextInputType? keyboardType,
-    String? Function(String?)? validator,
+    required String hint,
+    required TextEditingController controller,
   }) {
+    final theme = Theme.of(context);
+    final green = theme.colorScheme.tertiary;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -342,21 +373,33 @@ class _AddPetScreenState extends State<AddPetScreen> {
           controller: controller,
           keyboardType: keyboardType,
           validator: validator,
+
           decoration: InputDecoration(
-            hintText: label,
+            hintText: hint,
+            hintStyle: theme.textTheme.bodyMedium?.copyWith(
+              color: Colors.black38,
+            ),
             filled: true,
             fillColor: Colors.white,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
+            ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: Color(0xFFE5E7EB),
+              ),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: Color(0xFFE5E7EB),
+              ),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(color: trustGreen),
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: green, width: 2),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
