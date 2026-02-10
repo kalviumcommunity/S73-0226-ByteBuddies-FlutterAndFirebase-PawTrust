@@ -21,6 +21,7 @@ class AuthProvider extends ChangeNotifier {
   AuthStatus _status = AuthStatus.initial;
   UserModel? _user;
   String? _errorMessage;
+  bool _justCompletedRoleSelection = false;
 
   // Getters
   AuthStatus get status => _status;
@@ -28,6 +29,7 @@ class AuthProvider extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   bool get isAuthenticated => _status == AuthStatus.authenticated;
   bool get isLoading => _status == AuthStatus.loading;
+  bool get justCompletedRoleSelection => _justCompletedRoleSelection;
 
   AuthProvider() {
     // Listen to auth state changes
@@ -105,6 +107,8 @@ class AuthProvider extends ChangeNotifier {
 
     if (result.success) {
       _user = result.user;
+      // Clear the role selection flag on successful login
+      _justCompletedRoleSelection = false;
       // Check if onboarding is complete
       if (_user != null && !_user!.onboardingComplete) {
         _status = AuthStatus.needsRoleSelection;
@@ -132,7 +136,11 @@ class AuthProvider extends ChangeNotifier {
 
     if (success) {
       _user = _user!.copyWith(role: role, onboardingComplete: true);
-      _status = AuthStatus.authenticated;
+      // After role selection, user needs to login
+      // Sign them out and redirect to login screen
+      await _authService.signOut();
+      _status = AuthStatus.unauthenticated;
+      _justCompletedRoleSelection = true;
     } else {
       _status = AuthStatus.error;
       _errorMessage = 'Failed to update role. Please try again.';
@@ -160,6 +168,7 @@ class AuthProvider extends ChangeNotifier {
   /// Clear error message
   void clearError() {
     _errorMessage = null;
+    _justCompletedRoleSelection = false;
     if (_status == AuthStatus.error) {
       _status = AuthStatus.unauthenticated;
     }

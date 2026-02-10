@@ -7,57 +7,88 @@ class PetsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final trust = theme.colorScheme.secondary;
+    final green = theme.colorScheme.tertiary;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
 
       body: Column(
         children: [
+          // 🔹 HEADER WITH GRADIENT
           Container(
             height: 240,
             width: double.infinity,
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [
-                  trust,
-                  trust.withOpacity(0.85),
-                ],
+                colors: [green, green.withOpacity(0.85)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
             ),
             padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.white),
-                  onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const AddPetScreen(),
-                    ),
-                  );
-                },
-                ),
-                const Expanded(
-                  child: Center(
-                    child: Text(
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
                       'My Pets',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
+                        fontSize: 26,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.pets_rounded,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        color: Colors.white,
+                        size: 14,
+                      ),
+                      SizedBox(width: 6),
+                      Text(
+                        'No pets added yet',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const Icon(Icons.pets, color: Colors.white),
               ],
             ),
           ),
 
+          // ⚪ CONTENT AREA
           Expanded(
             child: Container(
               width: double.infinity,
@@ -72,13 +103,46 @@ class PetsScreen extends StatelessWidget {
               child: ListView(
                 physics: const BouncingScrollPhysics(),
                 children: [
-                  _emptyState(context),
+                  // 🎨 EMPTY STATE
+                  _EmptyStateCard(green),
+                  const SizedBox(height: 36),
 
-                  const SizedBox(height: 32),
+                  // 📌 BENEFITS SECTION
+                  Text(
+                    'Why Add Pets?',
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
 
+                  _BenefitCard(
+                    icon: Icons.location_on_rounded,
+                    title: 'Track Location',
+                    subtitle: 'Real-time GPS tracking during walks',
+                    color: theme.colorScheme.primary,
+                  ),
+                  const SizedBox(height: 12),
+                  _BenefitCard(
+                    icon: Icons.auto_stories_rounded,
+                    title: 'Activity History',
+                    subtitle: 'Keep detailed records of all activities',
+                    color: theme.colorScheme.secondary,
+                  ),
+                  const SizedBox(height: 12),
+                  _BenefitCard(
+                    icon: Icons.people_alt_rounded,
+                    title: 'Trusted Caregivers',
+                    subtitle: 'Connect with verified pet caregivers',
+                    color: green,
+                  ),
+                  const SizedBox(height: 36),
+
+                  // 🔘 ADD PET BUTTON
                   SizedBox(
                     width: double.infinity,
-                    height: 52,
+                    height: 56,
                     child: ElevatedButton.icon(
                       onPressed: () {
                         Navigator.push(
@@ -89,15 +153,15 @@ class PetsScreen extends StatelessWidget {
                         );
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: trust,
+                        backgroundColor: green,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(14),
                         ),
                         elevation: 4,
                       ),
-                      icon: const Icon(Icons.add, color: Colors.white),
+                      icon: const Icon(Icons.add_rounded, color: Colors.white, size: 24),
                       label: const Text(
-                        'Add a Pet',
+                        'Add Your First Pet',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 16,
@@ -106,6 +170,7 @@ class PetsScreen extends StatelessWidget {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 24),
                 ],
               ),
             ),
@@ -114,12 +179,19 @@ class PetsScreen extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget _emptyState(BuildContext context) {
-    final trust = Theme.of(context).colorScheme.secondary;
+class _EmptyStateCard extends StatelessWidget {
+  final Color color;
+
+  const _EmptyStateCard(this.color);
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
 
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
@@ -134,30 +206,99 @@ class PetsScreen extends StatelessWidget {
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.all(16),
+            width: 80,
+            height: 80,
             decoration: BoxDecoration(
-              color: trust.withOpacity(0.12),
+              color: color.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(
-              Icons.pets,
-              size: 40,
-              color: trust,
+              Icons.pets_rounded,
+              size: 44,
+              color: color,
             ),
           ),
-          const SizedBox(height: 16),
-          const Text(
-            'No pets added yet',
-            style: TextStyle(
-              fontSize: 18,
+          const SizedBox(height: 20),
+          Text(
+            'No Pets Yet',
+            style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Add your pet to start tracking walks and care activity.',
+          Text(
+            'Add your pets to get started with tracking walks and care activities.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.black54),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: Colors.black54,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BenefitCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color color;
+
+  const _BenefitCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: color, size: 24),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  subtitle,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: Colors.black54,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
