@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'providers/auth_provider.dart';
 import 'providers/pet_provider.dart';
+import 'providers/activity_provider.dart';
 import 'app.dart';
 
 void main() async {
@@ -17,6 +18,7 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => PetProvider()),
+        ChangeNotifierProvider(create: (_) => ActivityProvider()),
       ],
       child: const PawTrustApp(),
     ),

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../models/pet_model.dart';
+import '../models/user_model.dart';
 import '../providers/pet_provider.dart';
 import '../providers/auth_provider.dart';
 
@@ -23,14 +24,6 @@ class _AddPetScreenState extends State<AddPetScreen> {
     _controllers = List.generate(5, (_) => TextEditingController());
   }
 
-  @override
-  void dispose() {
-    for (var controller in _controllers) {
-      controller.dispose();
-    }
-    super.dispose();
-  }
-
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _breedController = TextEditingController();
@@ -45,6 +38,9 @@ class _AddPetScreenState extends State<AddPetScreen> {
 
   @override
   void dispose() {
+    for (var controller in _controllers) {
+      controller.dispose();
+    }
     _nameController.dispose();
     _breedController.dispose();
     _ageController.dispose();
@@ -83,6 +79,17 @@ class _AddPetScreenState extends State<AddPetScreen> {
     final authProvider = context.read<AuthProvider>();
     final petProvider = context.read<PetProvider>();
 
+    // Only owners can add pets
+    if (authProvider.user == null || authProvider.user!.role != UserRole.owner) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Only pet owners can add pets.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     if (authProvider.user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -113,9 +120,9 @@ class _AddPetScreenState extends State<AddPetScreen> {
 
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Pet added successfully! 🐾'),
-          backgroundColor: trustGreen,
+        SnackBar(
+          content: const Text('Pet added successfully! 🐾'),
+          backgroundColor: Colors.green,
         ),
       );
       Navigator.pop(context);
@@ -206,7 +213,7 @@ class _AddPetScreenState extends State<AddPetScreen> {
                           decoration: BoxDecoration(
                             color: Colors.white,
                             shape: BoxShape.circle,
-                            border: Border.all(color: trustGreen, width: 3),
+                            border: Border.all(color: green, width: 3),
                             image: _imageFile != null
                                 ? DecorationImage(
                                     image: FileImage(_imageFile!),
@@ -215,8 +222,8 @@ class _AddPetScreenState extends State<AddPetScreen> {
                                 : null,
                           ),
                           child: _imageFile == null
-                              ? const Icon(Icons.add_a_photo,
-                                  size: 40, color: trustGreen)
+                              ? Icon(Icons.add_a_photo,
+                                  size: 40, color: green)
                               : null,
 
                         ),
@@ -232,15 +239,11 @@ class _AddPetScreenState extends State<AddPetScreen> {
                     const SizedBox(height: 24),
 
                     // Pet Name
-                    _buildTextField(
-                      controller: _nameController,
+                    _buildInputField(
+                      context,
                       label: 'Pet Name',
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Please enter pet name';
-                        }
-                        return null;
-                      },
+                      hint: 'Enter pet name',
+                      controller: _nameController,
                     ),
                     const SizedBox(height: 16),
 
@@ -270,27 +273,20 @@ class _AddPetScreenState extends State<AddPetScreen> {
                     const SizedBox(height: 16),
 
                     // Breed
-                    _buildTextField(
-                      controller: _breedController,
+                    _buildInputField(
+                      context,
                       label: 'Breed (Optional)',
+                      hint: 'Enter breed',
+                      controller: _breedController,
                     ),
                     const SizedBox(height: 16),
 
                     // Age
-                    _buildTextField(
-                      controller: _ageController,
+                    _buildInputField(
+                      context,
                       label: 'Age (years)',
-                      keyboardType: TextInputType.number,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Please enter age';
-                        }
-                        final age = int.tryParse(value.trim());
-                        if (age == null || age < 0 || age > 50) {
-                          return 'Please enter a valid age (0-50)';
-                        }
-                        return null;
-                      },
+                      hint: 'Enter age',
+                      controller: _ageController,
                     ),
                     const SizedBox(height: 16),
 
@@ -314,7 +310,7 @@ class _AddPetScreenState extends State<AddPetScreen> {
                       child: ElevatedButton(
                         onPressed: _isLoading ? null : _handleSavePet,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: trustGreen,
+                          backgroundColor: green,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
@@ -340,10 +336,9 @@ class _AddPetScreenState extends State<AddPetScreen> {
                               ),
                       ),
                     ),
-
-                  ),
-                  const SizedBox(height: 20),
-                ],
+                    const SizedBox(height: 20),
+                  ],
+                ),
               ),
             ),
           ),
@@ -371,9 +366,6 @@ class _AddPetScreenState extends State<AddPetScreen> {
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,
-          keyboardType: keyboardType,
-          validator: validator,
-
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: theme.textTheme.bodyMedium?.copyWith(
@@ -433,7 +425,7 @@ class _AddPetScreenState extends State<AddPetScreen> {
             border: Border.all(color: const Color(0xFFE5E7EB)),
           ),
           child: DropdownButtonFormField<T>(
-            value: value,
+            initialValue: value,
             decoration: InputDecoration(
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

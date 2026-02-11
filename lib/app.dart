@@ -41,8 +41,6 @@ class PawTrustApp extends StatelessWidget {
           onTertiary: Colors.white,
           error: errorRed,
           onError: Colors.white,
-          background: surfaceLight,
-          onBackground: textPrimary,
           surface: Colors.white,
           onSurface: textPrimary,
           outline: dividerColor,
@@ -131,14 +129,14 @@ class PawTrustApp extends StatelessWidget {
             fontSize: 14,
             fontWeight: FontWeight.w500,
           ),
-          prefixIconColor: MaterialStateColor.resolveWith((states) {
-            if (states.contains(MaterialState.focused)) {
+          prefixIconColor: WidgetStateColor.resolveWith((states) {
+            if (states.contains(WidgetState.focused)) {
               return primaryBlue;
             }
             return textSecondary;
           }),
-          suffixIconColor: MaterialStateColor.resolveWith((states) {
-            if (states.contains(MaterialState.focused)) {
+          suffixIconColor: WidgetStateColor.resolveWith((states) {
+            if (states.contains(WidgetState.focused)) {
               return primaryBlue;
             }
             return textSecondary;
