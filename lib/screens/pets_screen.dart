@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/pet_provider.dart';
 import '../providers/auth_provider.dart';
 import '../models/pet_model.dart';
+import '../models/user_model.dart';
 import 'add_pet_screen.dart';
 
 class PetsScreen extends StatefulWidget {
@@ -16,7 +17,10 @@ class _PetsScreenState extends State<PetsScreen> {
   @override
   void initState() {
     super.initState();
-    _loadPets();
+    // Delay the call until after the first frame is finished building
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadPets();
+    });
   }
 
   Future<void> _loadPets() async {
@@ -70,6 +74,8 @@ class _PetsScreenState extends State<PetsScreen> {
     final theme = Theme.of(context);
     final trust = theme.colorScheme.secondary;
     final petProvider = context.watch<PetProvider>();
+    final authProvider = context.watch<AuthProvider>();
+    final currentUser = authProvider.user;
 
 
     return Scaffold(
@@ -97,30 +103,33 @@ class _PetsScreenState extends State<PetsScreen> {
                   icon: const Icon(Icons.arrow_back, color: Colors.white),
                   onPressed: () => Navigator.pop(context),
                 ),
-                const Expanded(
-                  child: Center(
-                    child: Text(
-
-                      'My Pets',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 26,
-                        fontWeight: FontWeight.bold,
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text(
+                        'My Pets',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        shape: BoxShape.circle,
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.pets_rounded,
+                          color: Colors.white,
+                          size: 24,
+                        ),
                       ),
-                      child: const Icon(
-                        Icons.pets_rounded,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(
@@ -176,44 +185,46 @@ class _PetsScreenState extends State<PetsScreen> {
                         physics: const AlwaysScrollableScrollPhysics(),
                         children: [
                           if (!petProvider.hasPets) ...[
-                            _emptyState(context),
+                            _EmptyStateCard(trust),
                             const SizedBox(height: 32),
                           ] else ...[
                             ...petProvider.pets.map((pet) => 
-                              _petCard(context, pet, trust)
+                              _petCard(context, pet, trust, currentUser)
                             ),
                             const SizedBox(height: 16),
                           ],
-                          SizedBox(
-                            width: double.infinity,
-                            height: 52,
-                            child: ElevatedButton.icon(
-                              onPressed: () async {
-                                await Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => const AddPetScreen(),
+                          // Only owners can add pets
+                          if (currentUser != null && currentUser.role == UserRole.owner)
+                            SizedBox(
+                              width: double.infinity,
+                              height: 52,
+                              child: ElevatedButton.icon(
+                                onPressed: () async {
+                                  await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const AddPetScreen(),
+                                    ),
+                                  );
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: trust,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
                                   ),
-                                );
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: trust,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
+                                  elevation: 4,
                                 ),
-                                elevation: 4,
-                              ),
-                              icon: const Icon(Icons.add, color: Colors.white),
-                              label: const Text(
-                                'Add a Pet',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
+                                icon: const Icon(Icons.add, color: Colors.white),
+                                label: const Text(
+                                  'Add a Pet',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
                         ],
                       ),
                     ),
@@ -224,7 +235,7 @@ class _PetsScreenState extends State<PetsScreen> {
     );
   }
 
-  Widget _petCard(BuildContext context, PetModel pet, Color trust) {
+  Widget _petCard(BuildContext context, PetModel pet, Color trust, UserModel? currentUser) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
@@ -287,10 +298,12 @@ class _PetsScreenState extends State<PetsScreen> {
             ),
           ),
           
-          // Delete Button
+          // Delete Button (owners only)
           IconButton(
             icon: const Icon(Icons.delete_outline, color: Colors.red),
-            onPressed: () => _handleDeletePet(pet.id, pet.name),
+            onPressed: currentUser != null && currentUser.role == UserRole.owner
+                ? () => _handleDeletePet(pet.id, pet.name)
+                : null,
           ),
         ],
       ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/pet_provider.dart';
+import '../models/user_model.dart';
 
 import 'activity_screen.dart';
 import 'pets_screen.dart';
@@ -52,29 +53,36 @@ class _HomeScreenState extends State<HomeScreen> {
       // 🔹 TAB CONTENT
       body: IndexedStack(index: _currentIndex, children: _screens),
 
-      // 🟢 FAB → ADD PET
-      floatingActionButton: Container(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: trust.withOpacity(0.35),
-              blurRadius: 24,
-              offset: const Offset(0, 12),
-            ),
-          ],
-        ),
-        child: FloatingActionButton(
-          backgroundColor: trust,
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const AddPetScreen()),
-            );
-          },
-          child: const Icon(Icons.pets),
-        ),
-      ),
+      // 🟢 FAB → ADD PET (owners only)
+      floatingActionButton: Builder(builder: (context) {
+        final auth = context.watch<AuthProvider>();
+        final user = auth.user;
+        // Only show add-pet FAB for owners
+        if (user == null || user.role != UserRole.owner) return const SizedBox.shrink();
+
+        return Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: trust.withOpacity(0.35),
+                blurRadius: 24,
+                offset: const Offset(0, 12),
+              ),
+            ],
+          ),
+          child: FloatingActionButton(
+            backgroundColor: trust,
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AddPetScreen()),
+              );
+            },
+            child: const Icon(Icons.pets),
+          ),
+        );
+      }),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
 
       // 🔻 BOTTOM NAV

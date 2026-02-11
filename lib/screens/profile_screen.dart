@@ -156,12 +156,12 @@ class ProfileScreen extends StatelessWidget {
                           padding: const EdgeInsets.all(4),
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: trust,
+                            color: purple,
                           ),
                           child: CircleAvatar(
                             radius: 42,
-                            backgroundColor: trust.withOpacity(0.12),
-                            child: Icon(Icons.person, size: 44, color: trust),
+                            backgroundColor: purple.withOpacity(0.12),
+                            child: Icon(Icons.person, size: 44, color: purple),
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -187,13 +187,13 @@ class ProfileScreen extends StatelessWidget {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: trust.withOpacity(0.1),
+                            color: purple.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
                             displayRole,
                             style: TextStyle(
-                              color: trust,
+                              color: purple,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -217,6 +217,9 @@ class ProfileScreen extends StatelessWidget {
                         ),
                       ],
                     ),
+                  ),
+                  const SizedBox(height: 24),
+
                   // 📊 STATS CARDS
                   Row(
                     children: [
@@ -335,6 +338,28 @@ class ProfileScreen extends StatelessWidget {
                   const SizedBox(height: 20),
                 ],
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _statItem(BuildContext context, String label, String value) {
+    return Expanded(
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: Colors.black54,
             ),
           ),
         ],

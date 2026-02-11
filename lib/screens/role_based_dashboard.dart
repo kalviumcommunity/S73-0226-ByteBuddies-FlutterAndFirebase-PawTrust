@@ -5,6 +5,7 @@ import '../models/request_model.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/request_card.dart';
 import '../widgets/status_badge.dart';
+import 'caregiver_job_screen.dart';
 
 class RoleBasedDashboard extends StatefulWidget {
   const RoleBasedDashboard({super.key});
@@ -16,7 +17,7 @@ class RoleBasedDashboard extends StatefulWidget {
 class _RoleBasedDashboardState extends State<RoleBasedDashboard>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  int _tabCount = 3;
+  final int _tabCount = 3;
 
   // Dummy data
   late List<RequestModel> _caregiverRequests;
@@ -454,8 +455,13 @@ class _RoleBasedDashboardState extends State<RoleBasedDashboard>
           SizedBox(
             width: double.infinity,
             height: 44,
-            child: ElevatedButton.icon(
-              onPressed: () {},
+              child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => CaregiverJobScreen(request: job)),
+                );
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: green,
                 shape: RoundedRectangleBorder(
