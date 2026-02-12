@@ -77,10 +77,8 @@ class PetService {
         age: age,
         gender: gender,
         ownerId: ownerId,
-        imageUrl: imageUrl,
+        photoUrl: imageUrl,
         createdAt: DateTime.now(),
-        medicalNotes: medicalNotes?.trim(),
-        weight: weight,
       );
 
       // Add to Firestore
@@ -165,8 +163,10 @@ class PetService {
           await _deletePetImage(existingPet.imageUrl!);
         }
 
-        final uploadResult =
-            await _uploadPetImage(imageFile, existingPet.ownerId);
+        final uploadResult = await _uploadPetImage(
+          imageFile,
+          existingPet.ownerId,
+        );
         if (uploadResult.success) {
           imageUrl = uploadResult.url;
         }
@@ -195,7 +195,8 @@ class PetService {
         updateData['gender'] = gender == PetGender.male ? 'male' : 'female';
       }
       if (imageUrl != null) updateData['imageUrl'] = imageUrl;
-      if (medicalNotes != null) updateData['medicalNotes'] = medicalNotes.trim();
+      if (medicalNotes != null)
+        updateData['medicalNotes'] = medicalNotes.trim();
       if (weight != null) updateData['weight'] = weight;
 
       // Update in Firestore
@@ -247,15 +248,18 @@ class PetService {
         .where('ownerId', isEqualTo: ownerId)
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => PetModel.fromFirestore(doc)).toList());
+        .map(
+          (snapshot) =>
+              snapshot.docs.map((doc) => PetModel.fromFirestore(doc)).toList(),
+        );
   }
 
   /// Get total pet count for an owner
   Future<int> getPetCount(String ownerId) async {
     try {
-      final querySnapshot =
-          await _petsCollection.where('ownerId', isEqualTo: ownerId).get();
+      final querySnapshot = await _petsCollection
+          .where('ownerId', isEqualTo: ownerId)
+          .get();
       return querySnapshot.size;
     } catch (e) {
       debugPrint('Error getting pet count: $e');
@@ -267,11 +271,16 @@ class PetService {
 
   /// Upload pet image to Firebase Storage
   Future<({bool success, String? url, String? errorMessage})> _uploadPetImage(
-      File imageFile, String ownerId) async {
+    File imageFile,
+    String ownerId,
+  ) async {
     try {
       final fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final storageRef =
-          _storage.ref().child('pets').child(ownerId).child(fileName);
+      final storageRef = _storage
+          .ref()
+          .child('pets')
+          .child(ownerId)
+          .child(fileName);
 
       // Upload file
       final uploadTask = await storageRef.putFile(imageFile);
@@ -286,7 +295,7 @@ class PetService {
       return (
         success: false,
         url: null,
-        errorMessage: 'Failed to upload image: $e'
+        errorMessage: 'Failed to upload image: $e',
       );
     }
   }
