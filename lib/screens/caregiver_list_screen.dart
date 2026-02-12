@@ -1,7 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../models/user_model.dart';
+import '../providers/auth_provider.dart';
+import '../providers/request_provider.dart';
+import '../providers/pet_provider.dart';
+import '../services/caregiver_service.dart';
 
-class CaregiverListScreen extends StatelessWidget {
+class CaregiverListScreen extends StatefulWidget {
   const CaregiverListScreen({super.key});
+
+  @override
+  State<CaregiverListScreen> createState() => _CaregiverListScreenState();
+}
+
+class _CaregiverListScreenState extends State<CaregiverListScreen> {
+  late Future<List<UserModel>> _caregiversFuture;
+  final CaregiverService _caregiverService = CaregiverService();
+
+  @override
+  void initState() {
+    super.initState();
+    _caregiversFuture = _caregiverService.getAllCaregivers();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -10,7 +30,6 @@ class CaregiverListScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-
       body: Column(
         children: [
           // 🔹 HEADER WITH GRADIENT
@@ -68,28 +87,44 @@ class CaregiverListScreen extends StatelessWidget {
                 ),
               ),
               padding: const EdgeInsets.all(24),
-              child: ListView(
-                physics: const BouncingScrollPhysics(),
-                children: [
-                  _BuildCaregiverCard(
-                    name: 'Aarav Sharma',
-                    rating: '4.8',
-                    distance: '1.2 km away',
-                  ),
-                  const SizedBox(height: 12),
-                  _BuildCaregiverCard(
-                    name: 'Neha Verma',
-                    rating: '4.6',
-                    distance: '2.5 km away',
-                  ),
-                  const SizedBox(height: 12),
-                  _BuildCaregiverCard(
-                    name: 'Rahul Mehta',
-                    rating: '4.9',
-                    distance: '0.9 km away',
-                  ),
-                  const SizedBox(height: 20),
-                ],
+              child: FutureBuilder<List<UserModel>>(
+                future: _caregiversFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Text('Error loading caregivers: ${snapshot.error}'),
+                    );
+                  }
+
+                  final caregivers = snapshot.data ?? [];
+
+                  if (caregivers.isEmpty) {
+                    return _EmptyCaregiverState(green);
+                  }
+
+                  return RefreshIndicator(
+                    onRefresh: () async {
+                      setState(() {
+                        _caregiversFuture =
+                            _caregiverService.getAllCaregivers();
+                      });
+                    },
+                    child: ListView.separated(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      itemCount: caregivers.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        return _BuildCaregiverCard(
+                          caregiver: caregivers[index],
+                        );
+                      },
+                    ),
+                  );
+                },
               ),
             ),
           ),
@@ -99,16 +134,124 @@ class CaregiverListScreen extends StatelessWidget {
   }
 }
 
-class _BuildCaregiverCard extends StatelessWidget {
-  final String name;
-  final String rating;
-  final String distance;
+class _BuildCaregiverCard extends StatefulWidget {
+  final UserModel caregiver;
 
   const _BuildCaregiverCard({
-    required this.name,
-    required this.rating,
-    required this.distance,
+    required this.caregiver,
   });
+
+  @override
+  State<_BuildCaregiverCard> createState() => _BuildCaregiverCardState();
+}
+
+class _BuildCaregiverCardState extends State<_BuildCaregiverCard> {
+  DateTime? _selectedDate;
+  TimeOfDay? _selectedTime;
+  bool _isCreatingRequest = false;
+
+  Future<void> _selectDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 30)),
+    );
+    if (picked != null) {
+      setState(() => _selectedDate = picked);
+    }
+  }
+
+  Future<void> _selectTime() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+    if (picked != null) {
+      setState(() => _selectedTime = picked);
+    }
+  }
+
+  Future<void> _handleRequestCaregio() async {
+    if (_selectedDate == null || _selectedTime == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select date and time'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    final authProvider = context.read<AuthProvider>();
+    final requestProvider = context.read<RequestProvider>();
+    final petProvider = context.read<PetProvider>();
+
+    if (authProvider.user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please login first')),
+      );
+      return;
+    }
+
+    if (petProvider.pets.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please add a pet first'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isCreatingRequest = true);
+
+    final currentUser = authProvider.user!;
+    final pet = petProvider.pets.first;
+
+    // Combine date and time
+    final requestDateTime = DateTime(
+      _selectedDate!.year,
+      _selectedDate!.month,
+      _selectedDate!.day,
+      _selectedTime!.hour,
+      _selectedTime!.minute,
+    );
+
+    final success = await requestProvider.createRequest(
+      petOwnerId: currentUser.uid,
+      caregiverId: widget.caregiver.uid,
+      ownerName: currentUser.fullName,
+      caregiverName: widget.caregiver.fullName,
+      petName: pet.name,
+      petType: pet.typeDisplayName,
+      requestedDate: requestDateTime,
+      requestedTime:
+          '${_selectedTime!.hour.toString().padLeft(2, '0')}:${_selectedTime!.minute.toString().padLeft(2, '0')}',
+    );
+
+    setState(() => _isCreatingRequest = false);
+
+    if (!mounted) return;
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content:
+              Text('Request sent to ${widget.caregiver.fullName}'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      Navigator.pop(context);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(requestProvider.errorMessage ?? 'Failed to send request'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -129,6 +272,7 @@ class _BuildCaregiverCard extends StatelessWidget {
         ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 👤 Avatar + Name Row
           Row(
@@ -176,113 +320,194 @@ class _BuildCaregiverCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      name,
+                      widget.caregiver.fullName,
                       style: theme.textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                       maxLines: 2,
                     ),
                     const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.location_on_outlined,
-                          size: 16,
-                          color: Colors.black54,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          distance,
-                          style:
-                              theme.textTheme.bodySmall?.copyWith(
-                            color: Colors.black54,
+                    Text(
+                      'Available Caregiver',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: Colors.black54,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Date & Time Selection
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.grey.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: InkWell(
+                        onTap: _selectDate,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: _selectedDate != null
+                                  ? green
+                                  : Colors.grey.withOpacity(0.3),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.calendar_today,
+                                  size: 18, color: green),
+                              const SizedBox(width: 8),
+                              Text(
+                                _selectedDate == null
+                                    ? 'Select Date'
+                                    : '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
+                                style: theme.textTheme.bodySmall,
+                              ),
+                            ],
                           ),
                         ),
-                      ],
+                      ),
                     ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // Divider
-          Divider(
-            color: Colors.grey.withOpacity(0.2),
-            height: 1,
-          ),
-          const SizedBox(height: 12),
-
-          // Rating + Button Row
-          Row(
-            children: [
-              // Rating Stars
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.amber.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.star_rounded,
-                      color: Colors.amber,
-                      size: 18,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      rating,
-                      style: theme.textTheme.labelLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: InkWell(
+                        onTap: _selectTime,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: _selectedTime != null
+                                  ? green
+                                  : Colors.grey.withOpacity(0.3),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.access_time,
+                                  size: 18, color: green),
+                              const SizedBox(width: 8),
+                              Text(
+                                _selectedTime == null
+                                    ? 'Select Time'
+                                    : _selectedTime!.format(context),
+                                style: theme.textTheme.bodySmall,
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
                   ],
                 ),
-              ),
-              const Spacer(),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
 
-              // Request Button
-              SizedBox(
-                height: 40,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Request sent to $name'),
-                        duration: const Duration(seconds: 2),
-                      ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: green,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                  ),
-                  icon: const Icon(
-                    Icons.check_circle_outline,
-                    color: Colors.white,
-                    size: 18,
-                  ),
-                  label: Text(
-                    'Request',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+          // Request Button
+          SizedBox(
+            width: double.infinity,
+            height: 44,
+            child: ElevatedButton.icon(
+              onPressed: _isCreatingRequest ? null : _handleRequestCaregio,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: green,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
                 ),
               ),
-            ],
+              icon: _isCreatingRequest
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation(Colors.white),
+                      ),
+                    )
+                  : const Icon(Icons.check_circle_outline, size: 20),
+              label: Text(
+                _isCreatingRequest ? 'Sending...' : 'Send Request',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _EmptyCaregiverState extends StatelessWidget {
+  final Color color;
+
+  const _EmptyCaregiverState(this.color);
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
+          child: Column(
+            children: [
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.people_outline,
+                  size: 44,
+                  color: color,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'No Caregivers Available',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Check back later or try refreshing the page.',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: Colors.black54,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/user_model.dart';
 import '../models/request_model.dart';
 import '../providers/auth_provider.dart';
+import '../providers/request_provider.dart';
 import '../widgets/request_card.dart';
 import '../widgets/status_badge.dart';
 import 'caregiver_job_screen.dart';
@@ -19,118 +20,32 @@ class _RoleBasedDashboardState extends State<RoleBasedDashboard>
   late TabController _tabController;
   final int _tabCount = 3;
 
-  // Dummy data
-  late List<RequestModel> _caregiverRequests;
-  late List<RequestModel> _ownerRequests;
-  late List<RequestModel> _activeJobs;
-  late List<RequestModel> _completedJobs;
-
   @override
   void initState() {
     super.initState();
-    _initializeDummyData();
     _tabController = TabController(length: _tabCount, vsync: this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadRequests();
+    });
   }
 
-  void _initializeDummyData() {
-    // Dummy caregiver requests
-    _caregiverRequests = [
-      RequestModel(
-        id: '1',
-        petOwnerId: 'owner1',
-        caregiverId: 'caregiver1',
-        petName: 'Max',
-        petType: 'dog',
-        ownerName: 'Sarah Johnson',
-        caregiverName: 'You',
-        requestedDate: DateTime.now().add(const Duration(hours: 2)),
-        requestedTime: '14:00',
-        status: RequestStatus.pending,
-        createdAt: DateTime.now(),
-        distance: 1.2,
-        notes: '30-minute walk',
-      ),
-      RequestModel(
-        id: '2',
-        petOwnerId: 'owner2',
-        caregiverId: 'caregiver1',
-        petName: 'Bella',
-        petType: 'dog',
-        ownerName: 'John Smith',
-        caregiverName: 'You',
-        requestedDate: DateTime.now().add(const Duration(hours: 5)),
-        requestedTime: '17:00',
-        status: RequestStatus.pending,
-        createdAt: DateTime.now(),
-        distance: 2.5,
-        notes: '1-hour walk',
-      ),
-    ];
+  Future<void> _loadRequests() async {
+    final authProvider = context.read<AuthProvider>();
+    final requestProvider = context.read<RequestProvider>();
 
-    // Dummy owner requests
-    _ownerRequests = [
-      RequestModel(
-        id: '3',
-        petOwnerId: 'owner1',
-        caregiverId: 'caregiver2',
-        petName: 'Max',
-        petType: 'dog',
-        ownerName: 'You',
-        caregiverName: 'Alex Chen',
-        requestedDate: DateTime.now(),
-        requestedTime: '15:00',
-        status: RequestStatus.accepted,
-        createdAt: DateTime.now().subtract(const Duration(hours: 1)),
-        distance: 1.5,
-      ),
-      RequestModel(
-        id: '4',
-        petOwnerId: 'owner1',
-        caregiverId: 'caregiver3',
-        petName: 'Max',
-        petType: 'dog',
-        ownerName: 'You',
-        caregiverName: 'Lisa Park',
-        requestedDate: DateTime.now().add(const Duration(days: 1)),
-        requestedTime: '10:00',
-        status: RequestStatus.pending,
-        createdAt: DateTime.now(),
-        distance: 2.0,
-      ),
-    ];
+    if (authProvider.user != null) {
+      final isCaregiver = authProvider.user!.role == UserRole.caregiver;
 
-    // Dummy active jobs
-    _activeJobs = [
-      RequestModel(
-        id: '5',
-        petOwnerId: 'owner3',
-        caregiverId: 'caregiver1',
-        petName: 'Charlie',
-        petType: 'dog',
-        ownerName: 'Michelle Davis',
-        caregiverName: 'You',
-        requestedDate: DateTime.now(),
-        requestedTime: '14:00',
-        status: RequestStatus.accepted,
-        createdAt: DateTime.now().subtract(const Duration(hours: 2)),
-      ),
-    ];
-
-    // Dummy completed jobs
-    _completedJobs = [
-      RequestModel(
-        id: '6',
-        petOwnerId: 'owner1',
-        caregiverId: 'caregiver1',
-        petName: 'Max',
-        petType: 'dog',
-        ownerName: 'Sarah Johnson',
-        caregiverName: 'You',
-        requestedDate: DateTime.now().subtract(const Duration(days: 2)),
-        status: RequestStatus.completed,
-        createdAt: DateTime.now().subtract(const Duration(days: 2)),
-      ),
-    ];
+      if (isCaregiver) {
+        await Future.wait([
+          requestProvider.fetchCaregiverPendingRequests(authProvider.user!.uid),
+          requestProvider.fetchCaregiverActiveRequests(authProvider.user!.uid),
+          requestProvider.fetchCaregiverCompletedRequests(authProvider.user!.uid),
+        ]);
+      } else {
+        await requestProvider.fetchOwnerRequests(authProvider.user!.uid);
+      }
+    }
   }
 
   @override
@@ -273,118 +188,242 @@ class _RoleBasedDashboardState extends State<RoleBasedDashboard>
 
   // CAREGIVER TABS
   Widget _buildCaregiverRequestsTab() {
-    if (_caregiverRequests.isEmpty) {
-      return _buildEmptyState(
-        icon: Icons.inbox_rounded,
-        title: 'No Requests',
-        subtitle: 'You\'ll see incoming care requests here',
+    final requestProvider = context.watch<RequestProvider>();
+    final pendingRequests = requestProvider.pendingRequests;
+
+    if (requestProvider.isLoading && pendingRequests.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (pendingRequests.isEmpty) {
+      return RefreshIndicator(
+        onRefresh: _loadRequests,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 48),
+              child: _buildEmptyState(
+                icon: Icons.inbox_rounded,
+                title: 'No Requests',
+                subtitle: 'You\'ll see incoming care requests here',
+              ),
+            ),
+          ],
+        ),
       );
     }
 
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: _caregiverRequests
-          .map((request) => CaregiverRequestCard(
-            request: request,
-            onAccept: () => _handleAcceptRequest(request),
-            onReject: () => _handleRejectRequest(request),
-          ))
-          .toList(),
+    return RefreshIndicator(
+      onRefresh: _loadRequests,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        children: pendingRequests
+            .map((request) => CaregiverRequestCard(
+                  request: request,
+                  onAccept: () => _handleAcceptRequest(request),
+                  onReject: () => _handleRejectRequest(request),
+                ))
+            .toList(),
+      ),
     );
   }
 
   Widget _buildActiveJobsTab() {
-    if (_activeJobs.isEmpty) {
-      return _buildEmptyState(
-        icon: Icons.work_outline_rounded,
-        title: 'No Active Jobs',
-        subtitle: 'Accept requests to see active jobs here',
+    final requestProvider = context.watch<RequestProvider>();
+    final activeJobs = requestProvider.activeRequests;
+
+    if (requestProvider.isLoading && activeJobs.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (activeJobs.isEmpty) {
+      return RefreshIndicator(
+        onRefresh: _loadRequests,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 48),
+              child: _buildEmptyState(
+                icon: Icons.work_outline_rounded,
+                title: 'No Active Jobs',
+                subtitle: 'Accept requests to see active jobs here',
+              ),
+            ),
+          ],
+        ),
       );
     }
 
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: _activeJobs
-          .map((job) => _buildActiveJobCard(job))
-          .toList(),
+    return RefreshIndicator(
+      onRefresh: _loadRequests,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        children: activeJobs
+            .map((job) => _buildActiveJobCard(job))
+            .toList(),
+      ),
     );
   }
 
   Widget _buildCompletedJobsTab() {
-    if (_completedJobs.isEmpty) {
-      return _buildEmptyState(
-        icon: Icons.history_rounded,
-        title: 'No History',
-        subtitle: 'Your completed jobs will appear here',
+    final requestProvider = context.watch<RequestProvider>();
+    final completedJobs = requestProvider.completedRequests;
+
+    if (requestProvider.isLoading && completedJobs.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (completedJobs.isEmpty) {
+      return RefreshIndicator(
+        onRefresh: _loadRequests,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 48),
+              child: _buildEmptyState(
+                icon: Icons.history_rounded,
+                title: 'No Completed Jobs',
+                subtitle: 'Your completed jobs will appear here',
+              ),
+            ),
+          ],
+        ),
       );
     }
 
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: _completedJobs
-          .map((job) => _buildCompletedJobCard(job))
-          .toList(),
+    return RefreshIndicator(
+      onRefresh: _loadRequests,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        children: completedJobs
+            .map((job) => _buildCompletedJobCard(job))
+            .toList(),
+      ),
     );
   }
 
   // OWNER TABS
   Widget _buildMyRequestsTab() {
-    if (_ownerRequests.isEmpty) {
-      return _buildEmptyState(
-        icon: Icons.request_quote_rounded,
-        title: 'No Requests',
-        subtitle: 'Send requests to caregivers to get started',
+    final requestProvider = context.watch<RequestProvider>();
+    final ownerPending = requestProvider.ownerPendingRequests;
+
+    if (requestProvider.isLoading && ownerPending.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (ownerPending.isEmpty) {
+      return RefreshIndicator(
+        onRefresh: _loadRequests,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 48),
+              child: _buildEmptyState(
+                icon: Icons.assignment_rounded,
+                title: 'No Requests',
+                subtitle: 'Send requests to caregivers to get started',
+              ),
+            ),
+          ],
+        ),
       );
     }
 
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: _ownerRequests
-          .map((request) => OwnerRequestCard(
-            request: request,
-            onCancel: () => _handleCancelRequest(request),
-          ))
-          .toList(),
+    return RefreshIndicator(
+      onRefresh: _loadRequests,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        children: ownerPending
+            .map((request) => OwnerRequestCard(
+                  request: request,
+                  onCancel: () => _handleCancelRequest(request),
+                ))
+            .toList(),
+      ),
     );
   }
 
   Widget _buildActiveWalkTab() {
-    final activeWalk = _ownerRequests
-        .where((r) => r.status == RequestStatus.accepted)
-        .firstOrNull;
+    final requestProvider = context.watch<RequestProvider>();
+    final activeWalk = requestProvider.ownerActiveRequests.firstOrNull;
+
+    if (requestProvider.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
     if (activeWalk == null) {
-      return _buildEmptyState(
-        icon: Icons.directions_walk_rounded,
-        title: 'No Active Walk',
-        subtitle: 'Once a caregiver accepts, you\'ll see them here',
+      return RefreshIndicator(
+        onRefresh: _loadRequests,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 48),
+              child: _buildEmptyState(
+                icon: Icons.directions_walk_rounded,
+                title: 'No Active Walk',
+                subtitle: 'Once a caregiver accepts, you\'ll see them here',
+              ),
+            ),
+          ],
+        ),
       );
     }
 
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [_buildActiveWalkCard(activeWalk)],
+    return RefreshIndicator(
+      onRefresh: _loadRequests,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        children: [_buildActiveWalkCard(activeWalk)],
+      ),
     );
   }
 
   Widget _buildOwnerHistoryTab() {
-    final history = _ownerRequests
-        .where((r) => r.status == RequestStatus.completed)
-        .toList();
+    final requestProvider = context.watch<RequestProvider>();
+    final history = requestProvider.ownerCompletedRequests;
+
+    if (requestProvider.isLoading && history.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
     if (history.isEmpty) {
-      return _buildEmptyState(
-        icon: Icons.history_rounded,
-        title: 'No History',
-        subtitle: 'Your walk history will appear here',
+      return RefreshIndicator(
+        onRefresh: _loadRequests,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 48),
+              child: _buildEmptyState(
+                icon: Icons.history_rounded,
+                title: 'No History',
+                subtitle: 'Your walk history will appear here',
+              ),
+            ),
+          ],
+        ),
       );
     }
 
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: history
-          .map((walk) => _buildOwnerHistoryCard(walk))
-          .toList(),
+    return RefreshIndicator(
+      onRefresh: _loadRequests,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        children: history
+            .map((walk) => _buildOwnerHistoryCard(walk))
+            .toList(),
+      ),
     );
   }
 
@@ -828,29 +867,53 @@ class _RoleBasedDashboardState extends State<RoleBasedDashboard>
   }
 
   // Handler methods (to be connected to backend later)
-  void _handleAcceptRequest(RequestModel request) {
+  Future<void> _handleAcceptRequest(RequestModel request) async {
+    final requestProvider = context.read<RequestProvider>();
+    final success = await requestProvider.acceptRequest(request.id);
+
+    if (!mounted) return;
+
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Request accepted! 🎉'),
-        duration: Duration(seconds: 2),
+      SnackBar(
+        content: Text(
+          success ? 'Request accepted! 🎉' : 'Failed to accept request',
+        ),
+        backgroundColor: success ? Colors.green : Colors.red,
+        duration: const Duration(seconds: 2),
       ),
     );
   }
 
-  void _handleRejectRequest(RequestModel request) {
+  Future<void> _handleRejectRequest(RequestModel request) async {
+    final requestProvider = context.read<RequestProvider>();
+    final success = await requestProvider.rejectRequest(request.id);
+
+    if (!mounted) return;
+
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Request rejected'),
-        duration: Duration(seconds: 2),
+      SnackBar(
+        content: Text(
+          success ? 'Request rejected' : 'Failed to reject request',
+        ),
+        backgroundColor: success ? Colors.orange : Colors.red,
+        duration: const Duration(seconds: 2),
       ),
     );
   }
 
-  void _handleCancelRequest(RequestModel request) {
+  Future<void> _handleCancelRequest(RequestModel request) async {
+    final requestProvider = context.read<RequestProvider>();
+    final success = await requestProvider.cancelRequest(request.id);
+
+    if (!mounted) return;
+
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Request cancelled'),
-        duration: Duration(seconds: 2),
+      SnackBar(
+        content: Text(
+          success ? 'Request cancelled' : 'Failed to cancel request',
+        ),
+        backgroundColor: success ? Colors.orange : Colors.red,
+        duration: const Duration(seconds: 2),
       ),
     );
   }
