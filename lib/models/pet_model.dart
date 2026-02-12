@@ -15,6 +15,19 @@ class PetModel {
   final String? photoUrl;
   final DateTime createdAt;
 
+  // Compatibility getters
+  String? get imageUrl => photoUrl;
+  String get typeDisplayName {
+    switch (type) {
+      case PetType.dog:
+        return 'Dog';
+      case PetType.cat:
+        return 'Cat';
+      case PetType.other:
+        return 'Other';
+    }
+  }
+
   PetModel({
     required this.id,
     required this.ownerId,

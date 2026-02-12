@@ -21,6 +21,7 @@ class AuthProvider extends ChangeNotifier {
 
   AuthStatus get status => _status;
   UserModel? get userProfile => _userProfile;
+  UserModel? get user => _userProfile; // Alias for compatibility
   String? get errorMessage => _errorMessage;
   bool get needsRoleSelection => _needsRoleSelection;
   User? get currentUser => _authService.currentUser;
