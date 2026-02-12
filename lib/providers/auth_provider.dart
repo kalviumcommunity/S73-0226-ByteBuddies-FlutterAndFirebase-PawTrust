@@ -1,177 +1,168 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
 
-/// Authentication state enum
 enum AuthStatus {
   initial,
-  loading,
+  authenticating,
   authenticated,
   unauthenticated,
-  needsRoleSelection,
   error,
 }
 
-/// AuthProvider - Manages authentication state across the app
-/// Uses ChangeNotifier for Provider state management
 class AuthProvider extends ChangeNotifier {
   final AuthService _authService = AuthService();
 
   AuthStatus _status = AuthStatus.initial;
-  UserModel? _user;
+  UserModel? _userProfile;
   String? _errorMessage;
-  bool _justCompletedRoleSelection = false;
+  bool _needsRoleSelection = false;
 
-  // Getters
   AuthStatus get status => _status;
-  UserModel? get user => _user;
+  UserModel? get userProfile => _userProfile;
   String? get errorMessage => _errorMessage;
+  bool get needsRoleSelection => _needsRoleSelection;
+  User? get currentUser => _authService.currentUser;
   bool get isAuthenticated => _status == AuthStatus.authenticated;
-  bool get isLoading => _status == AuthStatus.loading;
-  bool get justCompletedRoleSelection => _justCompletedRoleSelection;
 
   AuthProvider() {
-    // Listen to auth state changes
-    _authService.authStateChanges.listen(_onAuthStateChanged);
+    _init();
   }
 
-  /// Handle auth state changes from Firebase
-  Future<void> _onAuthStateChanged(User? firebaseUser) async {
-    if (firebaseUser == null) {
-      _status = AuthStatus.unauthenticated;
-      _user = null;
-      _errorMessage = null;
-    } else {
-      try {
-        // Fetch user data from Firestore
-        _user = await _authService.getUserData(firebaseUser.uid);
-        if (_user != null) {
-          // Check if onboarding is complete
-          if (!_user!.onboardingComplete) {
-            _status = AuthStatus.needsRoleSelection;
-          } else {
-            _status = AuthStatus.authenticated;
-          }
-          _errorMessage = null;
-        } else {
-          // User document not found - set error state with message
-          _status = AuthStatus.error;
-          _errorMessage = 'User profile not found. Please sign up again.';
-        }
-      } catch (e) {
-        _status = AuthStatus.error;
-        _errorMessage = 'Failed to load user data. Please try again.';
-        debugPrint('Error in _onAuthStateChanged: $e');
+  Future<void> _init() async {
+    _authService.authStateChanges.listen((user) async {
+      if (user != null) {
+        await _loadUserProfile(user.uid);
+      } else {
+        _status = AuthStatus.unauthenticated;
+        _userProfile = null;
+        _needsRoleSelection = false;
+        notifyListeners();
       }
+    });
+  }
+
+  Future<void> _loadUserProfile(String uid) async {
+    try {
+      _userProfile = await _authService.getUserProfile(uid);
+      if (_userProfile != null) {
+        _status = AuthStatus.authenticated;
+        _needsRoleSelection = false;
+      } else {
+        // User exists in Auth but not in Firestore yet
+        _needsRoleSelection = true;
+        _status = AuthStatus.authenticated;
+      }
+    } catch (e) {
+      _status = AuthStatus.error;
+      _errorMessage = e.toString();
     }
     notifyListeners();
   }
 
-  /// Sign up a new user
+  /// Sign up with email and password
   Future<bool> signUp({
     required String email,
     required String password,
     required String fullName,
   }) async {
-    _status = AuthStatus.loading;
-    _errorMessage = null;
-    notifyListeners();
-
-    final result = await _authService.signUp(
-      email: email,
-      password: password,
-      fullName: fullName,
-    );
-
-    if (result.success) {
-      _user = result.user;
-      _status = AuthStatus.needsRoleSelection;
-      notifyListeners();
-      return true;
-    } else {
-      _status = AuthStatus.error;
-      _errorMessage = result.errorMessage;
-      notifyListeners();
-      return false;
-    }
-  }
-
-  /// Sign in an existing user
-  Future<bool> signIn({required String email, required String password}) async {
-    _status = AuthStatus.loading;
-    _errorMessage = null;
-    notifyListeners();
-
-    final result = await _authService.signIn(email: email, password: password);
-
-    if (result.success) {
-      _user = result.user;
-      // Clear the role selection flag on successful login
-      _justCompletedRoleSelection = false;
-      // Check if onboarding is complete
-      if (_user != null && !_user!.onboardingComplete) {
-        _status = AuthStatus.needsRoleSelection;
-      } else {
-        _status = AuthStatus.authenticated;
-      }
-      notifyListeners();
-      return true;
-    } else {
-      _status = AuthStatus.error;
-      _errorMessage = result.errorMessage;
-      notifyListeners();
-      return false;
-    }
-  }
-
-  /// Update user role after selection
-  Future<bool> updateRole(UserRole role) async {
-    if (_user == null) return false;
-
-    _status = AuthStatus.loading;
-    notifyListeners();
-
-    final success = await _authService.updateUserRole(_user!.uid, role);
-
-    if (success) {
-      _user = _user!.copyWith(role: role, onboardingComplete: true);
-      // After role selection, user needs to login
-      // Sign them out and redirect to login screen
-      await _authService.signOut();
-      _status = AuthStatus.unauthenticated;
-      _justCompletedRoleSelection = true;
-    } else {
-      _status = AuthStatus.error;
-      _errorMessage = 'Failed to update role. Please try again.';
-    }
-    notifyListeners();
-    return success;
-  }
-
-  /// Sign out with error handling
-  Future<bool> signOut() async {
-    final result = await _authService.signOut();
-
-    if (result.success) {
-      _user = null;
-      _status = AuthStatus.unauthenticated;
+    try {
+      _status = AuthStatus.authenticating;
       _errorMessage = null;
-    } else {
-      _errorMessage = result.errorMessage;
-      // Don't change status on logout failure - user is still technically logged in
+      notifyListeners();
+
+      final credential = await _authService.signUp(
+        email: email,
+        password: password,
+        fullName: fullName,
+      );
+
+      if (credential.user != null) {
+        _needsRoleSelection = true;
+        _status = AuthStatus.authenticated;
+        notifyListeners();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      _status = AuthStatus.error;
+      _errorMessage = e.toString();
+      notifyListeners();
+      return false;
     }
+  }
+
+  /// Sign in with email and password
+  Future<bool> signIn({required String email, required String password}) async {
+    try {
+      _status = AuthStatus.authenticating;
+      _errorMessage = null;
+      notifyListeners();
+
+      final credential = await _authService.signIn(
+        email: email,
+        password: password,
+      );
+
+      if (credential.user != null) {
+        await _loadUserProfile(credential.user!.uid);
+        return true;
+      }
+      return false;
+    } catch (e) {
+      _status = AuthStatus.error;
+      _errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Complete registration with role selection
+  Future<bool> completeRegistration(UserRole role) async {
+    try {
+      final user = _authService.currentUser;
+      if (user == null) return false;
+
+      await _authService.createUserProfile(
+        uid: user.uid,
+        email: user.email ?? '',
+        fullName: user.displayName ?? '',
+        role: role,
+      );
+
+      await _loadUserProfile(user.uid);
+      _needsRoleSelection = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Sign out
+  Future<void> signOut() async {
+    await _authService.signOut();
+    _status = AuthStatus.unauthenticated;
+    _userProfile = null;
+    _needsRoleSelection = false;
+    _errorMessage = null;
     notifyListeners();
-    return result.success;
   }
 
   /// Clear error message
   void clearError() {
     _errorMessage = null;
-    _justCompletedRoleSelection = false;
-    if (_status == AuthStatus.error) {
-      _status = AuthStatus.unauthenticated;
-    }
     notifyListeners();
+  }
+
+  /// Refresh user profile
+  Future<void> refreshProfile() async {
+    final user = _authService.currentUser;
+    if (user != null) {
+      await _loadUserProfile(user.uid);
+    }
   }
 }

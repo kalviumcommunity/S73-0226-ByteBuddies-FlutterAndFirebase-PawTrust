@@ -10,63 +10,32 @@ class RoleSelectionScreen extends StatefulWidget {
   State<RoleSelectionScreen> createState() => _RoleSelectionScreenState();
 }
 
-class _RoleSelectionScreenState extends State<RoleSelectionScreen>
-    with SingleTickerProviderStateMixin {
+class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
   String selectedRole = '';
   bool _isLoading = false;
-  late AnimationController _animationController;
-
-  @override
-  void initState() {
-    super.initState();
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 500),
-      vsync: this,
-    )..forward();
-  }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
-  }
 
   Future<void> _handleContinue() async {
     if (selectedRole.isEmpty) return;
 
     setState(() => _isLoading = true);
 
-    final authProvider = context.read<AuthProvider>();
-    final role = selectedRole == 'caregiver'
-        ? UserRole.caregiver
-        : UserRole.owner;
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final role = selectedRole == 'owner' ? UserRole.owner : UserRole.caregiver;
 
-    final success = await authProvider.updateRole(role);
-
-    if (!mounted) return;
+    final success = await authProvider.completeRegistration(role);
 
     setState(() => _isLoading = false);
 
-    // AuthWrapper will handle navigation on success (to LoginScreen)
-    if (!success) {
+    if (!success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.error_outline, color: Colors.white),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(authProvider.errorMessage ?? 'Failed to save role'),
-              ),
-            ],
-          ),
-          backgroundColor: Colors.red.shade600,
-          behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.all(16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          content: Text(authProvider.errorMessage ?? 'Failed to save role'),
+          backgroundColor: Colors.red,
         ),
       );
+      authProvider.clearError();
     }
+    // Navigation is handled by AuthWrapper in app.dart
   }
 
   @override
@@ -80,55 +49,40 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen>
         height: double.infinity,
         child: Stack(
           children: [
-            // Gradient background
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    theme.colorScheme.primary.withOpacity(0.08),
-                    trust.withOpacity(0.08),
-                  ],
-                ),
+            Positioned.fill(
+              child: Image.asset(
+                'assets/images/auth_bg.png',
+                fit: BoxFit.cover,
               ),
+            ),
+
+            Positioned.fill(
+              child: Container(color: Colors.black.withOpacity(0.45)),
             ),
 
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 60),
+                const SizedBox(height: 80),
 
-                FadeTransition(
-                  opacity: Tween<double>(begin: 0, end: 1).animate(
-                    CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 24),
+                  child: Text(
+                    'Choose your role',
+                    style: TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      height: 1.2,
+                    ),
                   ),
-                  child: SlideTransition(
-                    position: Tween<Offset>(
-                      begin: const Offset(0, 0.1),
-                      end: Offset.zero,
-                    ).animate(
-                      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Choose your role',
-                            style: theme.textTheme.displayLarge,
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            'This helps us personalize your experience',
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                ),
+
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                  child: Text(
+                    'This helps us personalize your experience',
+                    style: TextStyle(color: Colors.white70, fontSize: 16),
                   ),
                 ),
 
@@ -136,41 +90,16 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen>
 
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(28),
-                  decoration: BoxDecoration(
+                  padding: const EdgeInsets.all(24),
+                  decoration: const BoxDecoration(
                     color: Colors.white,
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(32),
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(28),
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.08),
-                        blurRadius: 32,
-                        offset: const Offset(0, -4),
-                      ),
-                    ],
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Progress indicator
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(6),
-                        child: LinearProgressIndicator(
-                          value: 0.67,
-                          minHeight: 6,
-                          backgroundColor: theme.colorScheme.outline,
-                          valueColor: AlwaysStoppedAnimation(trust),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Step 2 of 3',
-                        style: theme.textTheme.labelMedium,
-                      ),
-                      const SizedBox(height: 28),
-
-                      // Owner Role Card
                       _roleCard(
                         context,
                         title: 'Pet Owner',
@@ -182,8 +111,6 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen>
                         }),
                       ),
                       const SizedBox(height: 16),
-
-                      // Caregiver Role Card
                       _roleCard(
                         context,
                         title: 'Caregiver',
@@ -197,63 +124,38 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen>
 
                       const SizedBox(height: 32),
 
-                      // Continue Button
                       SizedBox(
                         width: double.infinity,
-                        height: 52,
+                        height: 48,
                         child: ElevatedButton(
-                          onPressed: (selectedRole.isEmpty || _isLoading)
+                          onPressed: selectedRole.isEmpty || _isLoading
                               ? null
                               : _handleContinue,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: trust,
-                            disabledBackgroundColor:
-                                theme.disabledColor.withOpacity(0.3),
+                            disabledBackgroundColor: theme.disabledColor
+                                .withOpacity(0.3),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
                           child: _isLoading
-                              ? Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    SizedBox(
-                                      height: 20,
-                                      width: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2.5,
-                                        valueColor: AlwaysStoppedAnimation(
-                                          theme.colorScheme.onSecondary,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Text(
-                                      'Continuing...',
-                                      style: theme.textTheme.labelMedium
-                                          ?.copyWith(
-                                        color: theme.colorScheme.onSecondary,
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ],
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
                                 )
-                              : Text(
+                              : const Text(
                                   'Continue',
-                                  style: theme.textTheme.labelMedium?.copyWith(
-                                    color: theme.colorScheme.onSecondary,
+                                  style: TextStyle(
+                                    color: Colors.white,
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      Center(
-                        child: Text(
-                          'You can change this anytime in settings',
-                          style: theme.textTheme.labelMedium,
                         ),
                       ),
                     ],
@@ -282,43 +184,35 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen>
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 220),
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: theme.scaffoldBackgroundColor,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isActive ? trust : theme.colorScheme.outline,
-            width: isActive ? 2 : 1.5,
+            color: isActive ? trust : theme.dividerColor,
+            width: 2,
           ),
           boxShadow: isActive
               ? [
                   BoxShadow(
-                    color: trust.withOpacity(0.15),
-                    blurRadius: 16,
+                    color: trust.withOpacity(0.25),
+                    blurRadius: 14,
                     offset: const Offset(0, 8),
                   ),
                 ]
-              : [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+              : [],
         ),
         child: Row(
           children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 220),
+            Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: isActive ? trust.withOpacity(0.1) : theme.colorScheme.outline.withOpacity(0.3),
+                color: isActive ? trust : theme.dividerColor,
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 icon,
-                color: isActive ? trust : theme.colorScheme.onSurfaceVariant,
-                size: 26,
+                color: isActive ? Colors.white : Colors.black54,
               ),
             ),
             const SizedBox(width: 16),
@@ -328,26 +222,19 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen>
                 children: [
                   Text(
                     title,
-                    style: theme.textTheme.titleLarge,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     description,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
+                    style: const TextStyle(color: Colors.black54),
                   ),
                 ],
               ),
             ),
-            if (isActive) ...[
-              const SizedBox(width: 8),
-              Icon(
-                Icons.check_circle,
-                color: trust,
-                size: 26,
-              ),
-            ],
           ],
         ),
       ),
