@@ -22,7 +22,10 @@ class _CaregiverJobScreenState extends State<CaregiverJobScreen> {
   bool _isSubmitting = false;
 
   Future<void> _pickImage() async {
-    final XFile? file = await _picker.pickImage(source: ImageSource.camera, imageQuality: 75);
+    final XFile? file = await _picker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 75,
+    );
     if (file != null) {
       setState(() => _images.add(File(file.path)));
     }
@@ -38,18 +41,27 @@ class _CaregiverJobScreenState extends State<CaregiverJobScreen> {
       requestId: widget.request.id,
       caregiverId: auth.user!.uid,
       type: type,
-      note: _noteController.text.trim().isEmpty ? null : _noteController.text.trim(),
+      note: _noteController.text.trim().isEmpty
+          ? null
+          : _noteController.text.trim(),
       images: _images.isEmpty ? null : _images,
     );
 
     setState(() => _isSubmitting = false);
 
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Activity logged')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Activity logged')));
       _noteController.clear();
       setState(() => _images.clear());
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to log activity'), backgroundColor: Colors.red));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to log activity'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -61,24 +73,24 @@ class _CaregiverJobScreenState extends State<CaregiverJobScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Job: ${widget.request.petName}'),
-      ),
+      appBar: AppBar(title: Text('Job: ${widget.request.petName}')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
             Text('Owner: ${widget.request.ownerName}'),
             const SizedBox(height: 12),
-            Text('Scheduled: ${_formatDate(widget.request.requestedDate)} ${widget.request.requestedTime ?? ''}'),
+            Text(
+              'Scheduled: ${_formatDate(widget.request.requestedDate)} ${widget.request.requestedTime ?? ''}',
+            ),
             const SizedBox(height: 20),
 
             TextFormField(
               controller: _noteController,
-              decoration: const InputDecoration(labelText: 'Notes / Log message'),
+              decoration: const InputDecoration(
+                labelText: 'Notes / Log message',
+              ),
               maxLines: 3,
             ),
             const SizedBox(height: 12),
@@ -100,15 +112,30 @@ class _CaregiverJobScreenState extends State<CaregiverJobScreen> {
               spacing: 8,
               children: [
                 ElevatedButton(
-                  onPressed: _isSubmitting ? null : () => _submitLog(ActivityType.walk),
-                  child: _isSubmitting ? const SizedBox(width:16,height:16,child:CircularProgressIndicator(color:Colors.white,strokeWidth:2)) : const Text('Log Walk'),
+                  onPressed: _isSubmitting
+                      ? null
+                      : () => _submitLog(ActivityType.walk),
+                  child: _isSubmitting
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text('Log Walk'),
                 ),
                 ElevatedButton(
-                  onPressed: _isSubmitting ? null : () => _submitLog(ActivityType.feed),
+                  onPressed: _isSubmitting
+                      ? null
+                      : () => _submitLog(ActivityType.feed),
                   child: const Text('Log Feed'),
                 ),
                 ElevatedButton(
-                  onPressed: _isSubmitting ? null : () => _submitLog(ActivityType.medication),
+                  onPressed: _isSubmitting
+                      ? null
+                      : () => _submitLog(ActivityType.medication),
                   child: const Text('Log Medication'),
                 ),
               ],
@@ -118,18 +145,24 @@ class _CaregiverJobScreenState extends State<CaregiverJobScreen> {
 
             Expanded(
               child: StreamBuilder(
-                stream: context.read<ActivityProvider>().streamLogs(widget.request.id),
+                stream: context.read<ActivityProvider>().streamLogs(
+                  widget.request.id,
+                ),
                 builder: (context, AsyncSnapshot<List> snap) {
-                  if (!snap.hasData) return const Center(child: CircularProgressIndicator());
+                  if (!snap.hasData)
+                    return const Center(child: CircularProgressIndicator());
                   final logs = snap.data as List;
-                  if (logs.isEmpty) return const Center(child: Text('No logs yet'));
+                  if (logs.isEmpty)
+                    return const Center(child: Text('No logs yet'));
                   return ListView.builder(
                     itemCount: logs.length,
                     itemBuilder: (ctx, i) {
                       final l = logs[i];
                       return Card(
                         child: ListTile(
-                          title: Text(l.type.toString().split('.').last.toUpperCase()),
+                          title: Text(
+                            l.type.toString().split('.').last.toUpperCase(),
+                          ),
                           subtitle: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -151,5 +184,6 @@ class _CaregiverJobScreenState extends State<CaregiverJobScreen> {
   }
 
   String _formatDate(DateTime d) => '${d.day}/${d.month}/${d.year}';
-  String _formatDateTime(DateTime d) => '${d.day}/${d.month}/${d.year} ${d.hour.toString().padLeft(2,'0')}:${d.minute.toString().padLeft(2,'0')}';
+  String _formatDateTime(DateTime d) =>
+      '${d.day}/${d.month}/${d.year} ${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
 }

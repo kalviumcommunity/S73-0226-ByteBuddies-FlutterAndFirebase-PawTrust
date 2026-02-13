@@ -8,6 +8,7 @@ import 'pets_screen.dart';
 import 'profile_screen.dart';
 import 'caregiver_list_screen.dart';
 import 'add_pet_screen.dart';
+import 'role_based_dashboard.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -218,7 +219,12 @@ class _HomeDashboard extends StatelessWidget {
                           label: isCaregiver ? 'My Walks' : 'Start Walk',
                           color: primary,
                           onTap: () {
-                            // Navigate to activity/walks
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const RoleBasedDashboard(),
+                              ),
+                            );
                           },
                         ),
                         _primaryAction(
