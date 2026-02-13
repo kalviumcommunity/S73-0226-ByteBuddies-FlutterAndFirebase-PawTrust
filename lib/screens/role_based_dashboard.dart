@@ -19,14 +19,23 @@ class _RoleBasedDashboardState extends State<RoleBasedDashboard>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final int _tabCount = 3;
+  bool _didInitialLoad = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: _tabCount, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadRequests();
+      _tryLoadRequests();
     });
+  }
+
+  void _tryLoadRequests() {
+    final authProvider = context.read<AuthProvider>();
+    if (authProvider.user != null && !_didInitialLoad) {
+      _didInitialLoad = true;
+      _loadRequests();
+    }
   }
 
   Future<void> _loadRequests() async {
@@ -40,7 +49,9 @@ class _RoleBasedDashboardState extends State<RoleBasedDashboard>
         await Future.wait([
           requestProvider.fetchCaregiverPendingRequests(authProvider.user!.uid),
           requestProvider.fetchCaregiverActiveRequests(authProvider.user!.uid),
-          requestProvider.fetchCaregiverCompletedRequests(authProvider.user!.uid),
+          requestProvider.fetchCaregiverCompletedRequests(
+            authProvider.user!.uid,
+          ),
         ]);
       } else {
         await requestProvider.fetchOwnerRequests(authProvider.user!.uid);
@@ -59,12 +70,17 @@ class _RoleBasedDashboardState extends State<RoleBasedDashboard>
     final authProvider = context.watch<AuthProvider>();
     final user = authProvider.user;
 
+    // Trigger load when user becomes available (handles async profile loading)
+    if (user != null && !_didInitialLoad) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _tryLoadRequests();
+      });
+    }
+
     if (user == null) {
       return Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        body: Center(
-          child: Text('Loading...', style: Theme.of(context).textTheme.bodyLarge),
-        ),
+        body: const Center(child: CircularProgressIndicator()),
       );
     }
 
@@ -220,11 +236,13 @@ class _RoleBasedDashboardState extends State<RoleBasedDashboard>
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
         children: pendingRequests
-            .map((request) => CaregiverRequestCard(
-                  request: request,
-                  onAccept: () => _handleAcceptRequest(request),
-                  onReject: () => _handleRejectRequest(request),
-                ))
+            .map(
+              (request) => CaregiverRequestCard(
+                request: request,
+                onAccept: () => _handleAcceptRequest(request),
+                onReject: () => _handleRejectRequest(request),
+              ),
+            )
             .toList(),
       ),
     );
@@ -262,9 +280,7 @@ class _RoleBasedDashboardState extends State<RoleBasedDashboard>
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
-        children: activeJobs
-            .map((job) => _buildActiveJobCard(job))
-            .toList(),
+        children: activeJobs.map((job) => _buildActiveJobCard(job)).toList(),
       ),
     );
   }
@@ -342,10 +358,12 @@ class _RoleBasedDashboardState extends State<RoleBasedDashboard>
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
         children: ownerPending
-            .map((request) => OwnerRequestCard(
-                  request: request,
-                  onCancel: () => _handleCancelRequest(request),
-                ))
+            .map(
+              (request) => OwnerRequestCard(
+                request: request,
+                onCancel: () => _handleCancelRequest(request),
+              ),
+            )
             .toList(),
       ),
     );
@@ -420,9 +438,7 @@ class _RoleBasedDashboardState extends State<RoleBasedDashboard>
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
-        children: history
-            .map((walk) => _buildOwnerHistoryCard(walk))
-            .toList(),
+        children: history.map((walk) => _buildOwnerHistoryCard(walk)).toList(),
       ),
     );
   }
@@ -458,11 +474,7 @@ class _RoleBasedDashboardState extends State<RoleBasedDashboard>
                   color: green.withOpacity(0.12),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
-                  Icons.pets_rounded,
-                  color: green,
-                  size: 26,
-                ),
+                child: Icon(Icons.pets_rounded, color: green, size: 26),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -494,11 +506,13 @@ class _RoleBasedDashboardState extends State<RoleBasedDashboard>
           SizedBox(
             width: double.infinity,
             height: 44,
-              child: ElevatedButton.icon(
+            child: ElevatedButton.icon(
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => CaregiverJobScreen(request: job)),
+                  MaterialPageRoute(
+                    builder: (_) => CaregiverJobScreen(request: job),
+                  ),
                 );
               },
               style: ElevatedButton.styleFrom(
@@ -543,11 +557,7 @@ class _RoleBasedDashboardState extends State<RoleBasedDashboard>
               color: green.withOpacity(0.12),
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              Icons.verified_rounded,
-              color: green,
-              size: 24,
-            ),
+            child: Icon(Icons.verified_rounded, color: green, size: 24),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -612,7 +622,10 @@ class _RoleBasedDashboardState extends State<RoleBasedDashboard>
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
                 decoration: BoxDecoration(
                   color: primary.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(20),
@@ -658,11 +671,7 @@ class _RoleBasedDashboardState extends State<RoleBasedDashboard>
                     color: primary.withOpacity(0.2),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(
-                    Icons.person_rounded,
-                    color: primary,
-                    size: 22,
-                  ),
+                  child: Icon(Icons.person_rounded, color: primary, size: 22),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -685,7 +694,10 @@ class _RoleBasedDashboardState extends State<RoleBasedDashboard>
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: primary.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(8),
@@ -758,11 +770,7 @@ class _RoleBasedDashboardState extends State<RoleBasedDashboard>
               color: primary.withOpacity(0.12),
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              Icons.pets_rounded,
-              color: primary,
-              size: 24,
-            ),
+            child: Icon(Icons.pets_rounded, color: primary, size: 24),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -833,11 +841,7 @@ class _RoleBasedDashboardState extends State<RoleBasedDashboard>
               color: theme.colorScheme.secondary.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              icon,
-              size: 40,
-              color: theme.colorScheme.secondary,
-            ),
+            child: Icon(icon, size: 40, color: theme.colorScheme.secondary),
           ),
           const SizedBox(height: 20),
           Text(

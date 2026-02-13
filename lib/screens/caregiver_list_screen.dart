@@ -92,9 +92,27 @@ class _CaregiverListScreenState extends State<CaregiverListScreen> {
                   }
 
                   if (snapshot.hasError) {
+                    debugPrint('Error loading caregivers: ${snapshot.error}');
                     return Center(
-                      child: Text(
-                        'Error loading caregivers: ${snapshot.error}',
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            size: 48,
+                            color: Colors.red.shade300,
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Unable to load caregivers',
+                            style: TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Please check your connection and try again',
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        ],
                       ),
                     );
                   }
@@ -188,6 +206,17 @@ class _BuildCaregiverCardState extends State<_BuildCaregiverCard> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Please login first')));
+      return;
+    }
+
+    // Check if pets are still loading
+    if (petsProvider.isLoading) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Loading your pets, please wait...'),
+          backgroundColor: Colors.blue,
+        ),
+      );
       return;
     }
 
