@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/user_model.dart';
 import '../providers/auth_provider.dart';
 import '../providers/request_provider.dart';
-import '../providers/pet_provider.dart';
+import '../providers/pets_provider.dart';
 import '../services/caregiver_service.dart';
 
 class CaregiverListScreen extends StatefulWidget {
@@ -58,10 +58,7 @@ class _CaregiverListScreenState extends State<CaregiverListScreen> {
                 const SizedBox(height: 8),
                 const Text(
                   'Find Your Perfect',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 16,
-                  ),
+                  style: TextStyle(color: Colors.white70, fontSize: 16),
                 ),
                 const Text(
                   'Caregiver',
@@ -96,7 +93,9 @@ class _CaregiverListScreenState extends State<CaregiverListScreen> {
 
                   if (snapshot.hasError) {
                     return Center(
-                      child: Text('Error loading caregivers: ${snapshot.error}'),
+                      child: Text(
+                        'Error loading caregivers: ${snapshot.error}',
+                      ),
                     );
                   }
 
@@ -109,8 +108,8 @@ class _CaregiverListScreenState extends State<CaregiverListScreen> {
                   return RefreshIndicator(
                     onRefresh: () async {
                       setState(() {
-                        _caregiversFuture =
-                            _caregiverService.getAllCaregivers();
+                        _caregiversFuture = _caregiverService
+                            .getAllCaregivers();
                       });
                     },
                     child: ListView.separated(
@@ -137,9 +136,7 @@ class _CaregiverListScreenState extends State<CaregiverListScreen> {
 class _BuildCaregiverCard extends StatefulWidget {
   final UserModel caregiver;
 
-  const _BuildCaregiverCard({
-    required this.caregiver,
-  });
+  const _BuildCaregiverCard({required this.caregiver});
 
   @override
   State<_BuildCaregiverCard> createState() => _BuildCaregiverCardState();
@@ -185,16 +182,16 @@ class _BuildCaregiverCardState extends State<_BuildCaregiverCard> {
 
     final authProvider = context.read<AuthProvider>();
     final requestProvider = context.read<RequestProvider>();
-    final petProvider = context.read<PetProvider>();
+    final petsProvider = context.read<PetsProvider>();
 
     if (authProvider.user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please login first')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please login first')));
       return;
     }
 
-    if (petProvider.pets.isEmpty) {
+    if (petsProvider.pets.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please add a pet first'),
@@ -207,7 +204,7 @@ class _BuildCaregiverCardState extends State<_BuildCaregiverCard> {
     setState(() => _isCreatingRequest = true);
 
     final currentUser = authProvider.user!;
-    final pet = petProvider.pets.first;
+    final pet = petsProvider.pets.first;
 
     // Combine date and time
     final requestDateTime = DateTime(
@@ -237,8 +234,7 @@ class _BuildCaregiverCardState extends State<_BuildCaregiverCard> {
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content:
-              Text('Request sent to ${widget.caregiver.fullName}'),
+          content: Text('Request sent to ${widget.caregiver.fullName}'),
           backgroundColor: Colors.green,
         ),
       );
@@ -246,7 +242,9 @@ class _BuildCaregiverCardState extends State<_BuildCaregiverCard> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(requestProvider.errorMessage ?? 'Failed to send request'),
+          content: Text(
+            requestProvider.errorMessage ?? 'Failed to send request',
+          ),
           backgroundColor: Colors.red,
         ),
       );
@@ -290,11 +288,7 @@ class _BuildCaregiverCardState extends State<_BuildCaregiverCard> {
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
-                    Icon(
-                      Icons.person,
-                      size: 40,
-                      color: green,
-                    ),
+                    Icon(Icons.person, size: 40, color: green),
                     Positioned(
                       bottom: 0,
                       right: 0,
@@ -356,7 +350,9 @@ class _BuildCaregiverCardState extends State<_BuildCaregiverCard> {
                         onTap: _selectDate,
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 10),
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(8),
@@ -369,8 +365,11 @@ class _BuildCaregiverCardState extends State<_BuildCaregiverCard> {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.calendar_today,
-                                  size: 18, color: green),
+                              Icon(
+                                Icons.calendar_today,
+                                size: 18,
+                                color: green,
+                              ),
                               const SizedBox(width: 8),
                               Text(
                                 _selectedDate == null
@@ -389,7 +388,9 @@ class _BuildCaregiverCardState extends State<_BuildCaregiverCard> {
                         onTap: _selectTime,
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 10),
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(8),
@@ -402,8 +403,7 @@ class _BuildCaregiverCardState extends State<_BuildCaregiverCard> {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.access_time,
-                                  size: 18, color: green),
+                              Icon(Icons.access_time, size: 18, color: green),
                               const SizedBox(width: 8),
                               Text(
                                 _selectedTime == null
@@ -483,11 +483,7 @@ class _EmptyCaregiverState extends StatelessWidget {
                   color: color.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
-                  Icons.people_outline,
-                  size: 44,
-                  color: color,
-                ),
+                child: Icon(Icons.people_outline, size: 44, color: color),
               ),
               const SizedBox(height: 20),
               Text(
