@@ -93,6 +93,22 @@ class AuthService {
     return doc.exists && doc.data()?['role'] != null;
   }
 
+  /// Update user profile
+  Future<void> updateUserProfile({
+    required String uid,
+    String? fullName,
+  }) async {
+    final Map<String, dynamic> updates = {};
+    
+    if (fullName != null) {
+      updates['fullName'] = fullName.trim();
+    }
+    
+    if (updates.isNotEmpty) {
+      await _firestore.collection('users').doc(uid).update(updates);
+    }
+  }
+
   /// Password reset email
   Future<void> sendPasswordResetEmail(String email) async {
     await _auth.sendPasswordResetEmail(email: email);

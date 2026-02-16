@@ -4,6 +4,7 @@ import '../providers/auth_provider.dart';
 import '../providers/pets_provider.dart';
 import '../models/pet_model.dart';
 import 'add_pet_screen.dart';
+import 'edit_pet_screen.dart';
 
 class PetsScreen extends StatefulWidget {
   const PetsScreen({super.key});
@@ -172,87 +173,71 @@ class _PetsScreenState extends State<PetsScreen> {
 
   Widget _buildPetCard(BuildContext context, PetModel pet) {
     final trust = Theme.of(context).colorScheme.secondary;
-    final petsProvider = Provider.of<PetsProvider>(context, listen: false);
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => EditPetScreen(pet: pet),
           ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: trust.withOpacity(0.12),
-              shape: BoxShape.circle,
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 16,
+              offset: const Offset(0, 8),
             ),
-            child: Icon(_getPetIcon(pet.type), color: trust, size: 28),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  pet.name,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${pet.type.name[0].toUpperCase()}${pet.type.name.substring(1)} • ${pet.age} years • ${pet.gender.name[0].toUpperCase()}${pet.gender.name.substring(1)}',
-                  style: const TextStyle(color: Colors.black54),
-                ),
-                if (pet.breed != null && pet.breed!.isNotEmpty)
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: trust.withOpacity(0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(_getPetIcon(pet.type), color: trust, size: 28),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   Text(
-                    pet.breed!,
-                    style: const TextStyle(color: Colors.black45, fontSize: 12),
+                    pet.name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
                   ),
-              ],
+                  const SizedBox(height: 4),
+                  Text(
+                    '${pet.type.name[0].toUpperCase()}${pet.type.name.substring(1)} • ${pet.age} years • ${pet.gender.name[0].toUpperCase()}${pet.gender.name.substring(1)}',
+                    style: const TextStyle(color: Colors.black54),
+                  ),
+                  if (pet.breed != null && pet.breed!.isNotEmpty)
+                    Text(
+                      pet.breed!,
+                      style: const TextStyle(color: Colors.black45, fontSize: 12),
+                    ),
+                ],
+              ),
             ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete_outline, color: Colors.red),
-            onPressed: () async {
-              final confirm = await showDialog<bool>(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('Delete Pet'),
-                  content: Text('Are you sure you want to remove ${pet.name}?'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, false),
-                      child: const Text('Cancel'),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, true),
-                      child: const Text(
-                        'Delete',
-                        style: TextStyle(color: Colors.red),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-
-              if (confirm == true) {
-                await petsProvider.deletePet(pet.id);
-              }
-            },
-          ),
-        ],
+            const Icon(
+              Icons.chevron_right,
+              color: Colors.black38,
+            ),
+          ],
+        ),
       ),
     );
   }
