@@ -166,4 +166,35 @@ class AuthProvider extends ChangeNotifier {
       await _loadUserProfile(user.uid);
     }
   }
+
+  /// Update user profile
+  Future<bool> updateProfile({String? fullName}) async {
+    try {
+      final user = _authService.currentUser;
+      if (user == null) {
+        _errorMessage = 'User not authenticated';
+        notifyListeners();
+        return false;
+      }
+
+      // Update Firebase Auth display name
+      if (fullName != null && fullName.trim().isNotEmpty) {
+        await user.updateDisplayName(fullName.trim());
+      }
+
+      // Update Firestore user profile
+      await _authService.updateUserProfile(
+        uid: user.uid,
+        fullName: fullName,
+      );
+
+      // Reload profile
+      await _loadUserProfile(user.uid);
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
 }

@@ -79,12 +79,39 @@ class PetsProvider extends ChangeNotifier {
   }
 
   /// Update a pet
-  Future<bool> updatePet(String petId, Map<String, dynamic> data) async {
+  Future<bool> updatePet({
+    required String petId,
+    String? name,
+    PetType? type,
+    String? breed,
+    int? age,
+    PetGender? gender,
+    String? photoUrl,
+  }) async {
     try {
-      await _firestoreService.updatePet(petId, data);
+      _isLoading = true;
+      _errorMessage = null;
+      notifyListeners();
+
+      final Map<String, dynamic> updates = {};
+      
+      if (name != null) updates['name'] = name;
+      if (type != null) updates['type'] = type.name;
+      if (breed != null) updates['breed'] = breed;
+      if (age != null) updates['age'] = age;
+      if (gender != null) updates['gender'] = gender.name;
+      if (photoUrl != null) updates['photoUrl'] = photoUrl;
+
+      if (updates.isNotEmpty) {
+        await _firestoreService.updatePet(petId, updates);
+      }
+
+      _isLoading = false;
+      notifyListeners();
       return true;
     } catch (e) {
       _errorMessage = e.toString();
+      _isLoading = false;
       notifyListeners();
       return false;
     }
@@ -93,10 +120,18 @@ class PetsProvider extends ChangeNotifier {
   /// Delete a pet
   Future<bool> deletePet(String petId) async {
     try {
+      _isLoading = true;
+      _errorMessage = null;
+      notifyListeners();
+
       await _firestoreService.deletePet(petId);
+      
+      _isLoading = false;
+      notifyListeners();
       return true;
     } catch (e) {
       _errorMessage = e.toString();
+      _isLoading = false;
       notifyListeners();
       return false;
     }
