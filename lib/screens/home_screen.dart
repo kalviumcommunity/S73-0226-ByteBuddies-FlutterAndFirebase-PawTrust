@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/pets_provider.dart';
+import '../providers/walks_provider.dart';
 import '../models/user_model.dart';
 import 'activity_screen.dart';
 import 'pets_screen.dart';
@@ -41,10 +42,13 @@ class _HomeScreenState extends State<HomeScreen> {
   void _initializeProviders() {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final petsProvider = Provider.of<PetsProvider>(context, listen: false);
+    final walksProvider = Provider.of<WalksProvider>(context, listen: false);
     final userId = authProvider.currentUser?.uid;
 
     if (userId != null) {
       petsProvider.initializePets(userId);
+      final isOwner = authProvider.userProfile?.role == UserRole.owner;
+      walksProvider.initializeWalks(userId, isOwner);
     }
   }
 

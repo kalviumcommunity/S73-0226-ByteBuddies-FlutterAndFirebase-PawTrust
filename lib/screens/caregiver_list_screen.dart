@@ -16,11 +16,28 @@ class CaregiverListScreen extends StatefulWidget {
 class _CaregiverListScreenState extends State<CaregiverListScreen> {
   late Future<List<UserModel>> _caregiversFuture;
   final CaregiverService _caregiverService = CaregiverService();
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
     _caregiversFuture = _caregiverService.getAllCaregivers();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<UserModel> _filterCaregivers(List<UserModel> caregivers) {
+    if (_searchQuery.isEmpty) return caregivers;
+    final query = _searchQuery.toLowerCase();
+    return caregivers.where((c) {
+      return c.fullName.toLowerCase().contains(query) ||
+          (c.email.toLowerCase().contains(query));
+    }).toList();
   }
 
   @override
@@ -84,64 +101,133 @@ class _CaregiverListScreenState extends State<CaregiverListScreen> {
                 ),
               ),
               padding: const EdgeInsets.all(24),
-              child: FutureBuilder<List<UserModel>>(
-                future: _caregiversFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-
-                  if (snapshot.hasError) {
-                    debugPrint('Error loading caregivers: ${snapshot.error}');
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.error_outline,
-                            size: 48,
-                            color: Colors.red.shade300,
-                          ),
-                          const SizedBox(height: 16),
-                          const Text(
-                            'Unable to load caregivers',
-                            style: TextStyle(fontWeight: FontWeight.w500),
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Please check your connection and try again',
-                            style: TextStyle(color: Colors.grey),
-                          ),
-                        ],
+              child: Column(
+                children: [
+                  // Search Bar
+                  TextField(
+                    controller: _searchController,
+                    onChanged: (val) => setState(() => _searchQuery = val),
+                    decoration: InputDecoration(
+                      hintText: 'Search caregivers...',
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: _searchQuery.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() => _searchQuery = '');
+                              },
+                            )
+                          : null,
+                      filled: true,
+                      fillColor: Colors.white,
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: 0,
+                        horizontal: 16,
                       ),
-                    );
-                  }
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(color: green.withAlpha(77)),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(color: green.withAlpha(77)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(color: green),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
 
-                  final caregivers = snapshot.data ?? [];
+                  // Caregiver List
+                  Expanded(
+                    child: FutureBuilder<List<UserModel>>(
+                      future: _caregiversFuture,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        }
 
-                  if (caregivers.isEmpty) {
-                    return _EmptyCaregiverState(green);
-                  }
+                        if (snapshot.hasError) {
+                          debugPrint(
+                            'Error loading caregivers: ${snapshot.error}',
+                          );
+                          return Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.error_outline,
+                                  size: 48,
+                                  color: Colors.red.shade300,
+                                ),
+                                const SizedBox(height: 16),
+                                const Text(
+                                  'Unable to load caregivers',
+                                  style: TextStyle(fontWeight: FontWeight.w500),
+                                ),
+                                const SizedBox(height: 8),
+                                const Text(
+                                  'Please check your connection and try again',
+                                  style: TextStyle(color: Colors.grey),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
 
-                  return RefreshIndicator(
-                    onRefresh: () async {
-                      setState(() {
-                        _caregiversFuture = _caregiverService
-                            .getAllCaregivers();
-                      });
-                    },
-                    child: ListView.separated(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      itemCount: caregivers.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 12),
-                      itemBuilder: (context, index) {
-                        return _BuildCaregiverCard(
-                          caregiver: caregivers[index],
+                        final allCaregivers = snapshot.data ?? [];
+                        final caregivers = _filterCaregivers(allCaregivers);
+
+                        if (allCaregivers.isEmpty) {
+                          return _EmptyCaregiverState(green);
+                        }
+
+                        if (caregivers.isEmpty) {
+                          return Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.search_off,
+                                  size: 48,
+                                  color: Colors.grey.shade400,
+                                ),
+                                const SizedBox(height: 16),
+                                const Text('No caregivers match your search'),
+                              ],
+                            ),
+                          );
+                        }
+
+                        return RefreshIndicator(
+                          onRefresh: () async {
+                            setState(() {
+                              _caregiversFuture = _caregiverService
+                                  .getAllCaregivers();
+                            });
+                          },
+                          child: ListView.separated(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            itemCount: caregivers.length,
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(height: 12),
+                            itemBuilder: (context, index) {
+                              return _BuildCaregiverCard(
+                                caregiver: caregivers[index],
+                              );
+                            },
+                          ),
                         );
                       },
                     ),
-                  );
-                },
+                  ),
+                ],
               ),
             ),
           ),

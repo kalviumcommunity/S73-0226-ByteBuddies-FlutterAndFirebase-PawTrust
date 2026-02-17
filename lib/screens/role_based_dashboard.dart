@@ -4,6 +4,7 @@ import '../models/user_model.dart';
 import '../models/request_model.dart';
 import '../providers/auth_provider.dart';
 import '../providers/request_provider.dart';
+import '../providers/walks_provider.dart';
 import '../widgets/request_card.dart';
 import '../widgets/status_badge.dart';
 import 'caregiver_job_screen.dart';
@@ -507,11 +508,30 @@ class _RoleBasedDashboardState extends State<RoleBasedDashboard>
             width: double.infinity,
             height: 44,
             child: ElevatedButton.icon(
-              onPressed: () {
+              onPressed: () async {
+                final walksProvider = Provider.of<WalksProvider>(
+                  context,
+                  listen: false,
+                );
+                // Create walk session from request data
+                final walkId = await walksProvider.createWalkSession(
+                  petId: job.id, // use request id as reference
+                  petName: job.petName,
+                  ownerId: job.petOwnerId,
+                  caregiverId: job.caregiverId,
+                  caregiverName: job.caregiverName,
+                  scheduledAt: job.requestedDate,
+                  notes: job.notes,
+                );
+                if (walkId != null) {
+                  await walksProvider.startWalk(walkId);
+                }
+                if (!context.mounted) return;
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => CaregiverJobScreen(request: job),
+                    builder: (_) =>
+                        CaregiverJobScreen(request: job, walkId: walkId),
                   ),
                 );
               },
@@ -581,7 +601,7 @@ class _RoleBasedDashboardState extends State<RoleBasedDashboard>
             ),
           ),
           Text(
-            '\$25',
+            '\u2713 Completed',
             style: theme.textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.bold,
               color: green,

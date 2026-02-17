@@ -168,7 +168,7 @@ class AuthProvider extends ChangeNotifier {
   }
 
   /// Update user profile
-  Future<bool> updateProfile({String? fullName}) async {
+  Future<bool> updateProfile({String? fullName, String? photoUrl}) async {
     try {
       final user = _authService.currentUser;
       if (user == null) {
@@ -186,6 +186,7 @@ class AuthProvider extends ChangeNotifier {
       await _authService.updateUserProfile(
         uid: user.uid,
         fullName: fullName,
+        photoUrl: photoUrl,
       );
 
       // Reload profile

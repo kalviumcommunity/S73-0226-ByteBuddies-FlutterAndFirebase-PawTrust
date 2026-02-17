@@ -97,13 +97,17 @@ class AuthService {
   Future<void> updateUserProfile({
     required String uid,
     String? fullName,
+    String? photoUrl,
   }) async {
     final Map<String, dynamic> updates = {};
-    
+
     if (fullName != null) {
       updates['fullName'] = fullName.trim();
     }
-    
+    if (photoUrl != null) {
+      updates['photoUrl'] = photoUrl;
+    }
+
     if (updates.isNotEmpty) {
       await _firestore.collection('users').doc(uid).update(updates);
     }
