@@ -30,7 +30,7 @@ class CaregiverRequestCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withAlpha(10),
             blurRadius: 12,
             offset: const Offset(0, 2),
           ),
@@ -47,7 +47,7 @@ class CaregiverRequestCard extends StatelessWidget {
                 width: 56,
                 height: 56,
                 decoration: BoxDecoration(
-                  color: green.withOpacity(0.12),
+                  color: green.withAlpha(31),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -69,7 +69,7 @@ class CaregiverRequestCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '${request.petType.capitalize()} • From ${request.ownerName}',
+                      '${request.petType.capitalize()} â€¢ From ${request.ownerName}',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: Colors.black54,
                       ),
@@ -82,7 +82,7 @@ class CaregiverRequestCard extends StatelessWidget {
           const SizedBox(height: 12),
 
           // Divider
-          Divider(color: Colors.grey.withOpacity(0.2), height: 1),
+          Divider(color: Colors.grey.withAlpha(51), height: 1),
           const SizedBox(height: 12),
 
           // Date and distance info
@@ -211,7 +211,7 @@ class OwnerRequestCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withAlpha(10),
             blurRadius: 12,
             offset: const Offset(0, 2),
           ),
@@ -228,7 +228,7 @@ class OwnerRequestCard extends StatelessWidget {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: primary.withOpacity(0.12),
+                  color: primary.withAlpha(31),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -264,7 +264,7 @@ class OwnerRequestCard extends StatelessWidget {
           const SizedBox(height: 12),
 
           // Divider
-          Divider(color: Colors.grey.withOpacity(0.2), height: 1),
+          Divider(color: Colors.grey.withAlpha(51), height: 1),
           const SizedBox(height: 12),
 
           // Date info

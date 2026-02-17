@@ -46,6 +46,8 @@ class _CaregiverJobScreenState extends State<CaregiverJobScreen> {
   Future<void> _submitLog(ActivityType type) async {
     final auth = context.read<AuthProvider>();
     final activity = context.read<ActivityProvider>();
+    final walksProvider = context.read<WalksProvider>();
+    final messenger = ScaffoldMessenger.of(context);
     if (auth.user == null) return;
 
     setState(() => _isSubmitting = true);
@@ -61,7 +63,6 @@ class _CaregiverJobScreenState extends State<CaregiverJobScreen> {
 
     // Also add to walk session updates if walkId exists
     if (success && widget.walkId != null) {
-      final walksProvider = context.read<WalksProvider>();
       final logMessage =
           '${type.name.toUpperCase()}: ${_noteController.text.trim().isNotEmpty ? _noteController.text.trim() : 'Activity logged'}';
       await walksProvider.addWalkUpdate(widget.walkId!, message: logMessage);
@@ -70,13 +71,11 @@ class _CaregiverJobScreenState extends State<CaregiverJobScreen> {
     setState(() => _isSubmitting = false);
 
     if (success) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Activity logged')));
+      messenger.showSnackBar(const SnackBar(content: Text('Activity logged')));
       _noteController.clear();
       setState(() => _images.clear());
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         const SnackBar(
           content: Text('Failed to log activity'),
           backgroundColor: Colors.red,
@@ -86,6 +85,11 @@ class _CaregiverJobScreenState extends State<CaregiverJobScreen> {
   }
 
   Future<void> _completeWalk() async {
+    final requestProvider = context.read<RequestProvider>();
+    final walksProvider = context.read<WalksProvider>();
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -110,12 +114,10 @@ class _CaregiverJobScreenState extends State<CaregiverJobScreen> {
 
     setState(() => _isCompleting = true);
 
-    final requestProvider = context.read<RequestProvider>();
     bool success = await requestProvider.completeRequest(widget.request.id);
 
     // Complete walk session if exists
     if (widget.walkId != null) {
-      final walksProvider = context.read<WalksProvider>();
       final durationMinutes = _walkStartTime != null
           ? DateTime.now().difference(_walkStartTime!).inMinutes
           : 30;
@@ -127,15 +129,15 @@ class _CaregiverJobScreenState extends State<CaregiverJobScreen> {
     if (!mounted) return;
 
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         const SnackBar(
           content: Text('Walk completed successfully!'),
           backgroundColor: Colors.green,
         ),
       );
-      Navigator.pop(context);
+      navigator.pop();
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(
           content: Text(
             requestProvider.errorMessage ?? 'Failed to complete walk',

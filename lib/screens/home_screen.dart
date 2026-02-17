@@ -26,11 +26,13 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _screens = const [
-      _HomeDashboard(),
-      ActivityScreen(),
-      PetsScreen(),
-      ProfileScreen(),
+    _screens = [
+      _HomeDashboard(
+        onTabChanged: (index) => setState(() => _currentIndex = index),
+      ),
+      const ActivityScreen(),
+      const PetsScreen(),
+      const ProfileScreen(),
     ];
 
     // Initialize pets provider after first frame
@@ -69,7 +71,7 @@ class _HomeScreenState extends State<HomeScreen> {
           shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
-              color: trust.withOpacity(0.35),
+              color: trust.withAlpha(89),
               blurRadius: 24,
               offset: const Offset(0, 12),
             ),
@@ -98,7 +100,7 @@ class _HomeScreenState extends State<HomeScreen> {
             borderRadius: BorderRadius.circular(32),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.12),
+                color: Colors.black.withAlpha(31),
                 blurRadius: 24,
                 offset: const Offset(0, 12),
               ),
@@ -129,7 +131,7 @@ class _HomeScreenState extends State<HomeScreen> {
         duration: const Duration(milliseconds: 250),
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: isActive ? trust.withOpacity(0.12) : Colors.transparent,
+          color: isActive ? trust.withAlpha(31) : Colors.transparent,
           shape: BoxShape.circle,
         ),
         child: Icon(
@@ -147,7 +149,8 @@ class _HomeScreenState extends State<HomeScreen> {
 /* -------------------------------------------------------------------------- */
 
 class _HomeDashboard extends StatelessWidget {
-  const _HomeDashboard();
+  final ValueChanged<int> onTabChanged;
+  const _HomeDashboard({required this.onTabChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -170,7 +173,7 @@ class _HomeDashboard extends StatelessWidget {
               width: double.infinity,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [primary, primary.withOpacity(0.85)],
+                  colors: [primary, primary.withAlpha(217)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -180,7 +183,7 @@ class _HomeDashboard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Welcome Back, ${displayName.split(' ').first} 👋',
+                    'Welcome Back, ${displayName.split(' ').first} ðŸ‘‹',
                     style: const TextStyle(color: Colors.white70, fontSize: 16),
                   ),
                   const SizedBox(height: 6),
@@ -256,9 +259,7 @@ class _HomeDashboard extends StatelessWidget {
                       color: trust,
                       onTap: () {
                         // Navigate to profile to see trust score
-                        final homeState = context
-                            .findAncestorStateOfType<_HomeScreenState>();
-                        homeState?.setState(() => homeState._currentIndex = 3);
+                        onTabChanged(3);
                       },
                     ),
                     _featureTile(
@@ -268,9 +269,7 @@ class _HomeDashboard extends StatelessWidget {
                       color: primary,
                       onTap: () {
                         // Navigate to activity tab
-                        final homeState = context
-                            .findAncestorStateOfType<_HomeScreenState>();
-                        homeState?.setState(() => homeState._currentIndex = 1);
+                        onTabChanged(1);
                       },
                     ),
                     _featureTile(
@@ -310,7 +309,7 @@ class _HomeDashboard extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withAlpha(20),
             blurRadius: 24,
             offset: const Offset(0, 12),
           ),
@@ -321,7 +320,7 @@ class _HomeDashboard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: trust.withOpacity(0.12),
+              color: trust.withAlpha(31),
               shape: BoxShape.circle,
             ),
             child: Icon(Icons.verified, color: trust, size: 28),
@@ -369,10 +368,7 @@ class _HomeDashboard extends StatelessWidget {
               color: Colors.white,
               shape: BoxShape.circle,
               boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.12),
-                  blurRadius: 18,
-                ),
+                BoxShadow(color: Colors.black.withAlpha(31), blurRadius: 18),
               ],
             ),
             child: Icon(icon, color: color, size: 28),
@@ -400,7 +396,7 @@ class _HomeDashboard extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(18),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 12),
+            BoxShadow(color: Colors.black.withAlpha(13), blurRadius: 12),
           ],
         ),
         child: Row(
@@ -408,7 +404,7 @@ class _HomeDashboard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
+                color: color.withAlpha(31),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: color),

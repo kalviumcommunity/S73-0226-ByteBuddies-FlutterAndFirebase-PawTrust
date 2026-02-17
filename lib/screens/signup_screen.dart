@@ -76,7 +76,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   return Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [trust, trust.withOpacity(0.7)],
+                        colors: [trust, trust.withAlpha(179)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
@@ -87,7 +87,7 @@ class _SignupScreenState extends State<SignupScreen> {
             ),
 
             Positioned.fill(
-              child: Container(color: Colors.black.withOpacity(0.45)),
+              child: Container(color: Colors.black.withAlpha(115)),
             ),
 
             Column(

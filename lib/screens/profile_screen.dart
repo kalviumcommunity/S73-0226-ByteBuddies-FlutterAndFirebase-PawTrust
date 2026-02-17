@@ -28,7 +28,7 @@ class ProfileScreen extends StatelessWidget {
                 width: double.infinity,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [trust, trust.withOpacity(0.85)],
+                    colors: [trust, trust.withAlpha(217)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -78,7 +78,7 @@ class ProfileScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(24),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.08),
+                              color: Colors.black.withAlpha(20),
                               blurRadius: 24,
                               offset: const Offset(0, 12),
                             ),
@@ -94,7 +94,7 @@ class ProfileScreen extends StatelessWidget {
                               ),
                               child: CircleAvatar(
                                 radius: 42,
-                                backgroundColor: trust.withOpacity(0.12),
+                                backgroundColor: trust.withAlpha(31),
                                 backgroundImage: userProfile?.photoUrl != null
                                     ? NetworkImage(userProfile!.photoUrl!)
                                     : null,
@@ -304,7 +304,7 @@ class ProfileScreen extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 12),
+            BoxShadow(color: Colors.black.withAlpha(10), blurRadius: 12),
           ],
         ),
         child: Row(
@@ -312,7 +312,7 @@ class ProfileScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: trust.withOpacity(0.12),
+                color: trust.withAlpha(31),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: trust),

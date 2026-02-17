@@ -122,7 +122,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   return Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [trust, trust.withOpacity(0.7)],
+                        colors: [trust, trust.withAlpha(179)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
@@ -133,7 +133,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
 
             Positioned.fill(
-              child: Container(color: Colors.black.withOpacity(0.45)),
+              child: Container(color: Colors.black.withAlpha(115)),
             ),
 
             Column(

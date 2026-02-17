@@ -128,7 +128,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             width: double.infinity,
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [trust, trust.withOpacity(0.85)],
+                colors: [trust, trust.withAlpha(217)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -248,7 +248,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.06),
+                            color: Colors.black.withAlpha(15),
                             blurRadius: 16,
                             offset: const Offset(0, 4),
                           ),

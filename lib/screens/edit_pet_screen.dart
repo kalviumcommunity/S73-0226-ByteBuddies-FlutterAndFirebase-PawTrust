@@ -174,7 +174,7 @@ class _EditPetScreenState extends State<EditPetScreen> {
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.06),
+                            color: Colors.black.withAlpha(15),
                             blurRadius: 16,
                             offset: const Offset(0, 4),
                           ),
@@ -264,7 +264,7 @@ class _EditPetScreenState extends State<EditPetScreen> {
 
                           // Pet Type
                           DropdownButtonFormField<PetType>(
-                            value: _selectedType,
+                            initialValue: _selectedType,
                             decoration: InputDecoration(
                               labelText: 'Pet Type *',
                               prefixIcon: const Icon(Icons.category),
@@ -330,7 +330,7 @@ class _EditPetScreenState extends State<EditPetScreen> {
 
                           // Gender
                           DropdownButtonFormField<PetGender>(
-                            value: _selectedGender,
+                            initialValue: _selectedGender,
                             decoration: InputDecoration(
                               labelText: 'Gender *',
                               prefixIcon: const Icon(Icons.wc),

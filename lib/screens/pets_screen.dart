@@ -47,7 +47,7 @@ class _PetsScreenState extends State<PetsScreen> {
             width: double.infinity,
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [trust, trust.withOpacity(0.85)],
+                colors: [trust, trust.withAlpha(217)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -135,7 +135,7 @@ class _PetsScreenState extends State<PetsScreen> {
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.06),
+                color: Colors.black.withAlpha(15),
                 blurRadius: 20,
                 offset: const Offset(0, 10),
               ),
@@ -146,7 +146,7 @@ class _PetsScreenState extends State<PetsScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: trust.withOpacity(0.12),
+                  color: trust.withAlpha(31),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(Icons.pets, size: 40, color: trust),
@@ -191,7 +191,7 @@ class _PetsScreenState extends State<PetsScreen> {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.06),
+              color: Colors.black.withAlpha(15),
               blurRadius: 16,
               offset: const Offset(0, 8),
             ),
@@ -202,7 +202,7 @@ class _PetsScreenState extends State<PetsScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: trust.withOpacity(0.12),
+                color: trust.withAlpha(31),
                 shape: BoxShape.circle,
               ),
               child: Icon(_getPetIcon(pet.type), color: trust, size: 28),
@@ -221,7 +221,7 @@ class _PetsScreenState extends State<PetsScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${pet.type.name[0].toUpperCase()}${pet.type.name.substring(1)} • ${pet.age} years • ${pet.gender.name[0].toUpperCase()}${pet.gender.name.substring(1)}',
+                    '${pet.type.name[0].toUpperCase()}${pet.type.name.substring(1)} â€¢ ${pet.age} years â€¢ ${pet.gender.name[0].toUpperCase()}${pet.gender.name.substring(1)}',
                     style: const TextStyle(color: Colors.black54),
                   ),
                   if (pet.breed != null && pet.breed!.isNotEmpty)

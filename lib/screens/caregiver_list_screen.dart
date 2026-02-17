@@ -49,13 +49,13 @@ class _CaregiverListScreenState extends State<CaregiverListScreen> {
       backgroundColor: theme.scaffoldBackgroundColor,
       body: Column(
         children: [
-          // 🔹 HEADER WITH GRADIENT
+          // ðŸ”¹ HEADER WITH GRADIENT
           Container(
             height: 220,
             width: double.infinity,
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [green, green.withOpacity(0.85)],
+                colors: [green, green.withAlpha(217)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -89,7 +89,7 @@ class _CaregiverListScreenState extends State<CaregiverListScreen> {
             ),
           ),
 
-          // ⚪ CAREGIVER LIST
+          // âšª CAREGIVER LIST
           Expanded(
             child: Container(
               width: double.infinity,
@@ -215,7 +215,7 @@ class _CaregiverListScreenState extends State<CaregiverListScreen> {
                           child: ListView.separated(
                             physics: const AlwaysScrollableScrollPhysics(),
                             itemCount: caregivers.length,
-                            separatorBuilder: (_, __) =>
+                            separatorBuilder: (_, _) =>
                                 const SizedBox(height: 12),
                             itemBuilder: (context, index) {
                               return _BuildCaregiverCard(
@@ -379,7 +379,7 @@ class _BuildCaregiverCardState extends State<_BuildCaregiverCard> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withAlpha(20),
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),
@@ -388,7 +388,7 @@ class _BuildCaregiverCardState extends State<_BuildCaregiverCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 👤 Avatar + Name Row
+          // ðŸ‘¤ Avatar + Name Row
           Row(
             children: [
               // Avatar with green badge
@@ -398,7 +398,7 @@ class _BuildCaregiverCardState extends State<_BuildCaregiverCard> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: LinearGradient(
-                    colors: [green.withOpacity(0.2), green.withOpacity(0.08)],
+                    colors: [green.withAlpha(51), green.withAlpha(20)],
                   ),
                 ),
                 child: Stack(
@@ -494,7 +494,7 @@ class _BuildCaregiverCardState extends State<_BuildCaregiverCard> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.grey.withOpacity(0.05),
+              color: Colors.grey.withAlpha(13),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Column(
@@ -515,7 +515,7 @@ class _BuildCaregiverCardState extends State<_BuildCaregiverCard> {
                             border: Border.all(
                               color: _selectedDate != null
                                   ? green
-                                  : Colors.grey.withOpacity(0.3),
+                                  : Colors.grey.withAlpha(77),
                             ),
                           ),
                           child: Row(
@@ -553,7 +553,7 @@ class _BuildCaregiverCardState extends State<_BuildCaregiverCard> {
                             border: Border.all(
                               color: _selectedTime != null
                                   ? green
-                                  : Colors.grey.withOpacity(0.3),
+                                  : Colors.grey.withAlpha(77),
                             ),
                           ),
                           child: Row(
@@ -636,7 +636,7 @@ class _EmptyCaregiverState extends StatelessWidget {
                 width: 80,
                 height: 80,
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withAlpha(26),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(Icons.people_outline, size: 44, color: color),
