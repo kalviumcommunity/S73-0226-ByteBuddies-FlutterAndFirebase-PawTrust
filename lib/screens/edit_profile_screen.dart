@@ -1,4 +1,7 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 
@@ -13,6 +16,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   bool _isLoading = false;
+  Uint8List? _imageBytes;
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
@@ -32,14 +37,55 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.dispose();
   }
 
+  Future<void> _pickImage() async {
+    final pickedFile = await _picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 800,
+      maxHeight: 800,
+      imageQuality: 75,
+    );
+    if (pickedFile != null) {
+      final bytes = await pickedFile.readAsBytes();
+      setState(() => _imageBytes = bytes);
+    }
+  }
+
+  Future<String?> _uploadProfileImage(String uid) async {
+    if (_imageBytes == null) return null;
+    try {
+      final ref = FirebaseStorage.instance.ref().child(
+        'profile_images/$uid.jpg',
+      );
+      await ref.putData(
+        _imageBytes!,
+        SettableMetadata(contentType: 'image/jpeg'),
+      );
+      return await ref.getDownloadURL();
+    } catch (e) {
+      debugPrint('Error uploading profile image: $e');
+      return null;
+    }
+  }
+
   Future<void> _handleSave() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+    // Upload image if selected
+    String? photoUrl;
+    if (_imageBytes != null) {
+      final uid = authProvider.currentUser?.uid;
+      if (uid != null) {
+        photoUrl = await _uploadProfileImage(uid);
+      }
+    }
+
     final success = await authProvider.updateProfile(
       fullName: _nameController.text.trim(),
+      photoUrl: photoUrl,
     );
 
     setState(() => _isLoading = false);
@@ -82,7 +128,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             width: double.infinity,
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [trust, trust.withOpacity(0.85)],
+                colors: [trust, trust.withAlpha(217)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -132,6 +178,68 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 child: ListView(
                   physics: const BouncingScrollPhysics(),
                   children: [
+                    // Profile Photo Picker
+                    Center(
+                      child: Consumer<AuthProvider>(
+                        builder: (context, authProvider, _) {
+                          final existingUrl =
+                              authProvider.userProfile?.photoUrl;
+                          return GestureDetector(
+                            onTap: _pickImage,
+                            child: Stack(
+                              children: [
+                                CircleAvatar(
+                                  radius: 50,
+                                  backgroundColor: Colors.grey.shade200,
+                                  backgroundImage: _imageBytes != null
+                                      ? MemoryImage(_imageBytes!)
+                                      : (existingUrl != null
+                                            ? NetworkImage(existingUrl)
+                                            : null),
+                                  child:
+                                      (_imageBytes == null &&
+                                          existingUrl == null)
+                                      ? Icon(
+                                          Icons.person,
+                                          size: 40,
+                                          color: Colors.grey.shade400,
+                                        )
+                                      : null,
+                                ),
+                                Positioned(
+                                  bottom: 0,
+                                  right: 0,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      color: trust,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.camera_alt,
+                                      color: Colors.white,
+                                      size: 18,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Center(
+                      child: Text(
+                        'Tap to change photo',
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
                     // Profile Info Card
                     Container(
                       padding: const EdgeInsets.all(20),
@@ -140,7 +248,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.06),
+                            color: Colors.black.withAlpha(15),
                             blurRadius: 16,
                             offset: const Offset(0, 4),
                           ),
@@ -233,8 +341,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                                 'N/A',
                                             style: theme.textTheme.bodyMedium
                                                 ?.copyWith(
-                                              color: Colors.black54,
-                                            ),
+                                                  color: Colors.black54,
+                                                ),
                                           ),
                                         ),
                                         Icon(
@@ -307,8 +415,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                                 : 'Pet Owner',
                                             style: theme.textTheme.bodyMedium
                                                 ?.copyWith(
-                                              color: Colors.black54,
-                                            ),
+                                                  color: Colors.black54,
+                                                ),
                                           ),
                                         ),
                                       ],

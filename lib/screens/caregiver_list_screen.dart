@@ -16,11 +16,28 @@ class CaregiverListScreen extends StatefulWidget {
 class _CaregiverListScreenState extends State<CaregiverListScreen> {
   late Future<List<UserModel>> _caregiversFuture;
   final CaregiverService _caregiverService = CaregiverService();
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
     _caregiversFuture = _caregiverService.getAllCaregivers();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<UserModel> _filterCaregivers(List<UserModel> caregivers) {
+    if (_searchQuery.isEmpty) return caregivers;
+    final query = _searchQuery.toLowerCase();
+    return caregivers.where((c) {
+      return c.fullName.toLowerCase().contains(query) ||
+          (c.email.toLowerCase().contains(query));
+    }).toList();
   }
 
   @override
@@ -32,13 +49,13 @@ class _CaregiverListScreenState extends State<CaregiverListScreen> {
       backgroundColor: theme.scaffoldBackgroundColor,
       body: Column(
         children: [
-          // 🔹 HEADER WITH GRADIENT
+          // ðŸ”¹ HEADER WITH GRADIENT
           Container(
             height: 220,
             width: double.infinity,
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [green, green.withOpacity(0.85)],
+                colors: [green, green.withAlpha(217)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -72,7 +89,7 @@ class _CaregiverListScreenState extends State<CaregiverListScreen> {
             ),
           ),
 
-          // ⚪ CAREGIVER LIST
+          // âšª CAREGIVER LIST
           Expanded(
             child: Container(
               width: double.infinity,
@@ -84,64 +101,133 @@ class _CaregiverListScreenState extends State<CaregiverListScreen> {
                 ),
               ),
               padding: const EdgeInsets.all(24),
-              child: FutureBuilder<List<UserModel>>(
-                future: _caregiversFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-
-                  if (snapshot.hasError) {
-                    debugPrint('Error loading caregivers: ${snapshot.error}');
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.error_outline,
-                            size: 48,
-                            color: Colors.red.shade300,
-                          ),
-                          const SizedBox(height: 16),
-                          const Text(
-                            'Unable to load caregivers',
-                            style: TextStyle(fontWeight: FontWeight.w500),
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Please check your connection and try again',
-                            style: TextStyle(color: Colors.grey),
-                          ),
-                        ],
+              child: Column(
+                children: [
+                  // Search Bar
+                  TextField(
+                    controller: _searchController,
+                    onChanged: (val) => setState(() => _searchQuery = val),
+                    decoration: InputDecoration(
+                      hintText: 'Search caregivers...',
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: _searchQuery.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() => _searchQuery = '');
+                              },
+                            )
+                          : null,
+                      filled: true,
+                      fillColor: Colors.white,
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: 0,
+                        horizontal: 16,
                       ),
-                    );
-                  }
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(color: green.withAlpha(77)),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(color: green.withAlpha(77)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(color: green),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
 
-                  final caregivers = snapshot.data ?? [];
+                  // Caregiver List
+                  Expanded(
+                    child: FutureBuilder<List<UserModel>>(
+                      future: _caregiversFuture,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        }
 
-                  if (caregivers.isEmpty) {
-                    return _EmptyCaregiverState(green);
-                  }
+                        if (snapshot.hasError) {
+                          debugPrint(
+                            'Error loading caregivers: ${snapshot.error}',
+                          );
+                          return Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.error_outline,
+                                  size: 48,
+                                  color: Colors.red.shade300,
+                                ),
+                                const SizedBox(height: 16),
+                                const Text(
+                                  'Unable to load caregivers',
+                                  style: TextStyle(fontWeight: FontWeight.w500),
+                                ),
+                                const SizedBox(height: 8),
+                                const Text(
+                                  'Please check your connection and try again',
+                                  style: TextStyle(color: Colors.grey),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
 
-                  return RefreshIndicator(
-                    onRefresh: () async {
-                      setState(() {
-                        _caregiversFuture = _caregiverService
-                            .getAllCaregivers();
-                      });
-                    },
-                    child: ListView.separated(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      itemCount: caregivers.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 12),
-                      itemBuilder: (context, index) {
-                        return _BuildCaregiverCard(
-                          caregiver: caregivers[index],
+                        final allCaregivers = snapshot.data ?? [];
+                        final caregivers = _filterCaregivers(allCaregivers);
+
+                        if (allCaregivers.isEmpty) {
+                          return _EmptyCaregiverState(green);
+                        }
+
+                        if (caregivers.isEmpty) {
+                          return Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.search_off,
+                                  size: 48,
+                                  color: Colors.grey.shade400,
+                                ),
+                                const SizedBox(height: 16),
+                                const Text('No caregivers match your search'),
+                              ],
+                            ),
+                          );
+                        }
+
+                        return RefreshIndicator(
+                          onRefresh: () async {
+                            setState(() {
+                              _caregiversFuture = _caregiverService
+                                  .getAllCaregivers();
+                            });
+                          },
+                          child: ListView.separated(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            itemCount: caregivers.length,
+                            separatorBuilder: (_, _) =>
+                                const SizedBox(height: 12),
+                            itemBuilder: (context, index) {
+                              return _BuildCaregiverCard(
+                                caregiver: caregivers[index],
+                              );
+                            },
+                          ),
                         );
                       },
                     ),
-                  );
-                },
+                  ),
+                ],
               ),
             ),
           ),
@@ -164,6 +250,7 @@ class _BuildCaregiverCardState extends State<_BuildCaregiverCard> {
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
   bool _isCreatingRequest = false;
+  int _selectedPetIndex = 0;
 
   Future<void> _selectDate() async {
     final picked = await showDatePicker(
@@ -233,7 +320,7 @@ class _BuildCaregiverCardState extends State<_BuildCaregiverCard> {
     setState(() => _isCreatingRequest = true);
 
     final currentUser = authProvider.user!;
-    final pet = petsProvider.pets.first;
+    final pet = petsProvider.pets[_selectedPetIndex];
 
     // Combine date and time
     final requestDateTime = DateTime(
@@ -292,7 +379,7 @@ class _BuildCaregiverCardState extends State<_BuildCaregiverCard> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withAlpha(20),
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),
@@ -301,7 +388,7 @@ class _BuildCaregiverCardState extends State<_BuildCaregiverCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 👤 Avatar + Name Row
+          // ðŸ‘¤ Avatar + Name Row
           Row(
             children: [
               // Avatar with green badge
@@ -311,7 +398,7 @@ class _BuildCaregiverCardState extends State<_BuildCaregiverCard> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: LinearGradient(
-                    colors: [green.withOpacity(0.2), green.withOpacity(0.08)],
+                    colors: [green.withAlpha(51), green.withAlpha(20)],
                   ),
                 ),
                 child: Stack(
@@ -363,11 +450,51 @@ class _BuildCaregiverCardState extends State<_BuildCaregiverCard> {
           ),
           const SizedBox(height: 16),
 
+          // Pet Selection
+          Consumer<PetsProvider>(
+            builder: (context, petsProvider, _) {
+              if (petsProvider.pets.isEmpty) {
+                return const SizedBox.shrink();
+              }
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: green.withAlpha(77)),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<int>(
+                    value: _selectedPetIndex < petsProvider.pets.length
+                        ? _selectedPetIndex
+                        : 0,
+                    isExpanded: true,
+                    icon: Icon(Icons.pets, color: green, size: 20),
+                    items: List.generate(petsProvider.pets.length, (i) {
+                      final p = petsProvider.pets[i];
+                      return DropdownMenuItem<int>(
+                        value: i,
+                        child: Text(
+                          '${p.name} (${p.typeDisplayName})',
+                          style: theme.textTheme.bodyMedium,
+                        ),
+                      );
+                    }),
+                    onChanged: (val) {
+                      if (val != null) setState(() => _selectedPetIndex = val);
+                    },
+                  ),
+                ),
+              );
+            },
+          ),
+
           // Date & Time Selection
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.grey.withOpacity(0.05),
+              color: Colors.grey.withAlpha(13),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Column(
@@ -388,7 +515,7 @@ class _BuildCaregiverCardState extends State<_BuildCaregiverCard> {
                             border: Border.all(
                               color: _selectedDate != null
                                   ? green
-                                  : Colors.grey.withOpacity(0.3),
+                                  : Colors.grey.withAlpha(77),
                             ),
                           ),
                           child: Row(
@@ -426,7 +553,7 @@ class _BuildCaregiverCardState extends State<_BuildCaregiverCard> {
                             border: Border.all(
                               color: _selectedTime != null
                                   ? green
-                                  : Colors.grey.withOpacity(0.3),
+                                  : Colors.grey.withAlpha(77),
                             ),
                           ),
                           child: Row(
@@ -509,7 +636,7 @@ class _EmptyCaregiverState extends StatelessWidget {
                 width: 80,
                 height: 80,
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withAlpha(26),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(Icons.people_outline, size: 44, color: color),

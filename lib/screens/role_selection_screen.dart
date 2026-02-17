@@ -57,7 +57,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
             ),
 
             Positioned.fill(
-              child: Container(color: Colors.black.withOpacity(0.45)),
+              child: Container(color: Colors.black.withAlpha(115)),
             ),
 
             Column(
@@ -134,7 +134,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: trust,
                             disabledBackgroundColor: theme.disabledColor
-                                .withOpacity(0.3),
+                                .withAlpha(77),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -195,7 +195,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
           boxShadow: isActive
               ? [
                   BoxShadow(
-                    color: trust.withOpacity(0.25),
+                    color: trust.withAlpha(64),
                     blurRadius: 14,
                     offset: const Offset(0, 8),
                   ),

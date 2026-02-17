@@ -8,7 +8,6 @@ import 'providers/pets_provider.dart';
 import 'providers/walks_provider.dart';
 import 'providers/request_provider.dart';
 import 'providers/activity_provider.dart';
-import 'providers/pet_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,7 +21,6 @@ void main() async {
         ChangeNotifierProvider(create: (_) => WalksProvider()),
         ChangeNotifierProvider(create: (_) => RequestProvider()),
         ChangeNotifierProvider(create: (_) => ActivityProvider()),
-        ChangeNotifierProvider(create: (_) => PetProvider()),
       ],
       child: const PawTrustApp(),
     ),

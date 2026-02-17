@@ -1,4 +1,6 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/pets_provider.dart';
@@ -22,6 +24,8 @@ class _AddPetScreenState extends State<AddPetScreen> {
   PetType _selectedType = PetType.dog;
   PetGender _selectedGender = PetGender.male;
   bool _isLoading = false;
+  Uint8List? _imageBytes;
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void dispose() {
@@ -29,6 +33,19 @@ class _AddPetScreenState extends State<AddPetScreen> {
     _breedController.dispose();
     _ageController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    final pickedFile = await _picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 800,
+      maxHeight: 800,
+      imageQuality: 75,
+    );
+    if (pickedFile != null) {
+      final bytes = await pickedFile.readAsBytes();
+      setState(() => _imageBytes = bytes);
+    }
   }
 
   Future<void> _handleSavePet() async {
@@ -60,6 +77,7 @@ class _AddPetScreenState extends State<AddPetScreen> {
           : _breedController.text.trim(),
       age: int.tryParse(_ageController.text.trim()) ?? 0,
       gender: _selectedGender,
+      imageBytes: _imageBytes,
     );
 
     setState(() => _isLoading = false);
@@ -87,7 +105,6 @@ class _AddPetScreenState extends State<AddPetScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
-
       body: Column(
         children: [
           Container(
@@ -124,7 +141,6 @@ class _AddPetScreenState extends State<AddPetScreen> {
               ],
             ),
           ),
-
           Expanded(
             child: Container(
               width: double.infinity,
@@ -139,6 +155,58 @@ class _AddPetScreenState extends State<AddPetScreen> {
                 child: ListView(
                   physics: const BouncingScrollPhysics(),
                   children: [
+                    // Photo Picker
+                    Center(
+                      child: GestureDetector(
+                        onTap: _pickImage,
+                        child: Stack(
+                          children: [
+                            CircleAvatar(
+                              radius: 50,
+                              backgroundColor: Colors.grey.shade200,
+                              backgroundImage: _imageBytes != null
+                                  ? MemoryImage(_imageBytes!)
+                                  : null,
+                              child: _imageBytes == null
+                                  ? Icon(
+                                      Icons.pets,
+                                      size: 40,
+                                      color: Colors.grey.shade400,
+                                    )
+                                  : null,
+                            ),
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: const BoxDecoration(
+                                  color: trustGreen,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.camera_alt,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Center(
+                      child: Text(
+                        'Tap to add photo',
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
                     _inputField(
                       label: 'Pet Name',
                       controller: _nameController,
@@ -150,7 +218,6 @@ class _AddPetScreenState extends State<AddPetScreen> {
                       },
                     ),
                     const SizedBox(height: 16),
-
                     _dropdownField(
                       label: 'Pet Type',
                       value: _selectedType,
@@ -162,13 +229,11 @@ class _AddPetScreenState extends State<AddPetScreen> {
                       },
                     ),
                     const SizedBox(height: 16),
-
                     _inputField(
                       label: 'Breed (Optional)',
                       controller: _breedController,
                     ),
                     const SizedBox(height: 16),
-
                     _inputField(
                       label: 'Age (years)',
                       controller: _ageController,
@@ -184,7 +249,6 @@ class _AddPetScreenState extends State<AddPetScreen> {
                       },
                     ),
                     const SizedBox(height: 16),
-
                     _dropdownField(
                       label: 'Gender',
                       value: _selectedGender,
@@ -196,7 +260,6 @@ class _AddPetScreenState extends State<AddPetScreen> {
                       },
                     ),
                     const SizedBox(height: 32),
-
                     SizedBox(
                       width: double.infinity,
                       height: 52,

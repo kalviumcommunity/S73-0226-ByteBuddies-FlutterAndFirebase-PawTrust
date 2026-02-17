@@ -195,8 +195,9 @@ class PetService {
         updateData['gender'] = gender == PetGender.male ? 'male' : 'female';
       }
       if (imageUrl != null) updateData['imageUrl'] = imageUrl;
-      if (medicalNotes != null)
+      if (medicalNotes != null) {
         updateData['medicalNotes'] = medicalNotes.trim();
+      }
       if (weight != null) updateData['weight'] = weight;
 
       // Update in Firestore

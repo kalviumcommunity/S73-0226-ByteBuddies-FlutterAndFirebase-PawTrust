@@ -1,4 +1,6 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../providers/pets_provider.dart';
 import '../models/pet_model.dart';
@@ -23,6 +25,8 @@ class _EditPetScreenState extends State<EditPetScreen> {
   late PetType _selectedType;
   late PetGender _selectedGender;
   bool _isLoading = false;
+  Uint8List? _imageBytes;
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
@@ -33,6 +37,19 @@ class _EditPetScreenState extends State<EditPetScreen> {
     _ageController.text = widget.pet.age.toString();
     _selectedType = widget.pet.type;
     _selectedGender = widget.pet.gender;
+  }
+
+  Future<void> _pickImage() async {
+    final pickedFile = await _picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 800,
+      maxHeight: 800,
+      imageQuality: 75,
+    );
+    if (pickedFile != null) {
+      final bytes = await pickedFile.readAsBytes();
+      setState(() => _imageBytes = bytes);
+    }
   }
 
   @override
@@ -59,6 +76,7 @@ class _EditPetScreenState extends State<EditPetScreen> {
           : _breedController.text.trim(),
       age: int.tryParse(_ageController.text.trim()) ?? 0,
       gender: _selectedGender,
+      imageBytes: _imageBytes,
     );
 
     setState(() => _isLoading = false);
@@ -156,7 +174,7 @@ class _EditPetScreenState extends State<EditPetScreen> {
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.06),
+                            color: Colors.black.withAlpha(15),
                             blurRadius: 16,
                             offset: const Offset(0, 4),
                           ),
@@ -165,6 +183,54 @@ class _EditPetScreenState extends State<EditPetScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // Pet Photo
+                          Center(
+                            child: GestureDetector(
+                              onTap: _pickImage,
+                              child: Stack(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 45,
+                                    backgroundColor: Colors.grey.shade200,
+                                    backgroundImage: _imageBytes != null
+                                        ? MemoryImage(_imageBytes!)
+                                        : (widget.pet.photoUrl != null
+                                              ? NetworkImage(
+                                                  widget.pet.photoUrl!,
+                                                )
+                                              : null),
+                                    child:
+                                        (_imageBytes == null &&
+                                            widget.pet.photoUrl == null)
+                                        ? Icon(
+                                            Icons.pets,
+                                            size: 36,
+                                            color: Colors.grey.shade400,
+                                          )
+                                        : null,
+                                  ),
+                                  Positioned(
+                                    bottom: 0,
+                                    right: 0,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(5),
+                                      decoration: const BoxDecoration(
+                                        color: trustGreen,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.camera_alt,
+                                        color: Colors.white,
+                                        size: 16,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+
                           Text(
                             'Pet Details',
                             style: theme.textTheme.titleMedium?.copyWith(
@@ -198,7 +264,7 @@ class _EditPetScreenState extends State<EditPetScreen> {
 
                           // Pet Type
                           DropdownButtonFormField<PetType>(
-                            value: _selectedType,
+                            initialValue: _selectedType,
                             decoration: InputDecoration(
                               labelText: 'Pet Type *',
                               prefixIcon: const Icon(Icons.category),
@@ -206,10 +272,12 @@ class _EditPetScreenState extends State<EditPetScreen> {
                               fillColor: theme.scaffoldBackgroundColor,
                             ),
                             items: PetType.values
-                                .map((type) => DropdownMenuItem(
-                                      value: type,
-                                      child: Text(_getPetTypeName(type)),
-                                    ))
+                                .map(
+                                  (type) => DropdownMenuItem(
+                                    value: type,
+                                    child: Text(_getPetTypeName(type)),
+                                  ),
+                                )
                                 .toList(),
                             onChanged: (value) {
                               if (value != null) {
@@ -262,7 +330,7 @@ class _EditPetScreenState extends State<EditPetScreen> {
 
                           // Gender
                           DropdownButtonFormField<PetGender>(
-                            value: _selectedGender,
+                            initialValue: _selectedGender,
                             decoration: InputDecoration(
                               labelText: 'Gender *',
                               prefixIcon: const Icon(Icons.wc),
@@ -270,10 +338,12 @@ class _EditPetScreenState extends State<EditPetScreen> {
                               fillColor: theme.scaffoldBackgroundColor,
                             ),
                             items: PetGender.values
-                                .map((gender) => DropdownMenuItem(
-                                      value: gender,
-                                      child: Text(_getGenderName(gender)),
-                                    ))
+                                .map(
+                                  (gender) => DropdownMenuItem(
+                                    value: gender,
+                                    child: Text(_getGenderName(gender)),
+                                  ),
+                                )
                                 .toList(),
                             onChanged: (value) {
                               if (value != null) {

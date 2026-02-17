@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/pets_provider.dart';
+import '../providers/walks_provider.dart';
 import '../models/user_model.dart';
 import 'activity_screen.dart';
 import 'pets_screen.dart';
@@ -25,11 +26,13 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _screens = const [
-      _HomeDashboard(),
-      ActivityScreen(),
-      PetsScreen(),
-      ProfileScreen(),
+    _screens = [
+      _HomeDashboard(
+        onTabChanged: (index) => setState(() => _currentIndex = index),
+      ),
+      const ActivityScreen(),
+      const PetsScreen(),
+      const ProfileScreen(),
     ];
 
     // Initialize pets provider after first frame
@@ -41,10 +44,13 @@ class _HomeScreenState extends State<HomeScreen> {
   void _initializeProviders() {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final petsProvider = Provider.of<PetsProvider>(context, listen: false);
+    final walksProvider = Provider.of<WalksProvider>(context, listen: false);
     final userId = authProvider.currentUser?.uid;
 
     if (userId != null) {
       petsProvider.initializePets(userId);
+      final isOwner = authProvider.userProfile?.role == UserRole.owner;
+      walksProvider.initializeWalks(userId, isOwner);
     }
   }
 
@@ -65,7 +71,7 @@ class _HomeScreenState extends State<HomeScreen> {
           shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
-              color: trust.withOpacity(0.35),
+              color: trust.withAlpha(89),
               blurRadius: 24,
               offset: const Offset(0, 12),
             ),
@@ -94,7 +100,7 @@ class _HomeScreenState extends State<HomeScreen> {
             borderRadius: BorderRadius.circular(32),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.12),
+                color: Colors.black.withAlpha(31),
                 blurRadius: 24,
                 offset: const Offset(0, 12),
               ),
@@ -125,7 +131,7 @@ class _HomeScreenState extends State<HomeScreen> {
         duration: const Duration(milliseconds: 250),
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: isActive ? trust.withOpacity(0.12) : Colors.transparent,
+          color: isActive ? trust.withAlpha(31) : Colors.transparent,
           shape: BoxShape.circle,
         ),
         child: Icon(
@@ -143,7 +149,8 @@ class _HomeScreenState extends State<HomeScreen> {
 /* -------------------------------------------------------------------------- */
 
 class _HomeDashboard extends StatelessWidget {
-  const _HomeDashboard();
+  final ValueChanged<int> onTabChanged;
+  const _HomeDashboard({required this.onTabChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -166,7 +173,7 @@ class _HomeDashboard extends StatelessWidget {
               width: double.infinity,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [primary, primary.withOpacity(0.85)],
+                  colors: [primary, primary.withAlpha(217)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -176,7 +183,7 @@ class _HomeDashboard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Welcome Back, ${displayName.split(' ').first} 👋',
+                    'Welcome Back, ${displayName.split(' ').first} ðŸ‘‹',
                     style: const TextStyle(color: Colors.white70, fontSize: 16),
                   ),
                   const SizedBox(height: 6),
@@ -250,18 +257,34 @@ class _HomeDashboard extends StatelessWidget {
                       title: 'Trust Score',
                       subtitle: 'All caregivers are identity verified',
                       color: trust,
+                      onTap: () {
+                        // Navigate to profile to see trust score
+                        onTabChanged(3);
+                      },
                     ),
                     _featureTile(
                       icon: Icons.timeline,
                       title: 'Live Activity',
                       subtitle: 'Track walks in real time',
                       color: primary,
+                      onTap: () {
+                        // Navigate to activity tab
+                        onTabChanged(1);
+                      },
                     ),
                     _featureTile(
                       icon: Icons.history,
                       title: 'Walk History',
                       subtitle: 'View past walks & summaries',
                       color: primary,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const RoleBasedDashboard(),
+                          ),
+                        );
+                      },
                     ),
 
                     const SizedBox(height: 60),
@@ -286,7 +309,7 @@ class _HomeDashboard extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withAlpha(20),
             blurRadius: 24,
             offset: const Offset(0, 12),
           ),
@@ -297,7 +320,7 @@ class _HomeDashboard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: trust.withOpacity(0.12),
+              color: trust.withAlpha(31),
               shape: BoxShape.circle,
             ),
             child: Icon(Icons.verified, color: trust, size: 28),
@@ -345,10 +368,7 @@ class _HomeDashboard extends StatelessWidget {
               color: Colors.white,
               shape: BoxShape.circle,
               boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.12),
-                  blurRadius: 18,
-                ),
+                BoxShadow(color: Colors.black.withAlpha(31), blurRadius: 18),
               ],
             ),
             child: Icon(icon, color: color, size: 28),
@@ -365,46 +385,50 @@ class _HomeDashboard extends StatelessWidget {
     required String title,
     required String subtitle,
     required Color color,
+    VoidCallback? onTap,
   }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 12),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
-              shape: BoxShape.circle,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withAlpha(13), blurRadius: 12),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withAlpha(31),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color),
             ),
-            child: Icon(icon, color: color),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(subtitle, style: const TextStyle(color: Colors.black54)),
-              ],
+                  const SizedBox(height: 4),
+                  Text(subtitle, style: const TextStyle(color: Colors.black54)),
+                ],
+              ),
             ),
-          ),
-          const Icon(Icons.chevron_right),
-        ],
+            const Icon(Icons.chevron_right),
+          ],
+        ),
       ),
     );
   }

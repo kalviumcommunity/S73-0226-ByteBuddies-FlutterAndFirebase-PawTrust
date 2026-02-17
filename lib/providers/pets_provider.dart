@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import '../models/pet_model.dart';
 import '../services/firestore_service.dart';
 
 class PetsProvider extends ChangeNotifier {
   final FirestoreService _firestoreService = FirestoreService();
+  final FirebaseStorage _storage = FirebaseStorage.instance;
 
   List<PetModel> _pets = [];
   bool _isLoading = false;
@@ -39,6 +41,21 @@ class PetsProvider extends ChangeNotifier {
         );
   }
 
+  /// Upload pet image to Firebase Storage and return the download URL
+  Future<String?> _uploadPetImage(String petId, Uint8List imageBytes) async {
+    try {
+      final ref = _storage.ref().child('pet_images/$petId.jpg');
+      await ref.putData(
+        imageBytes,
+        SettableMetadata(contentType: 'image/jpeg'),
+      );
+      return await ref.getDownloadURL();
+    } catch (e) {
+      debugPrint('Error uploading pet image: $e');
+      return null;
+    }
+  }
+
   /// Add a new pet
   Future<bool> addPet({
     required String ownerId,
@@ -48,6 +65,7 @@ class PetsProvider extends ChangeNotifier {
     required int age,
     required PetGender gender,
     String? photoUrl,
+    Uint8List? imageBytes,
   }) async {
     try {
       _isLoading = true;
@@ -66,7 +84,16 @@ class PetsProvider extends ChangeNotifier {
         createdAt: DateTime.now(),
       );
 
-      await _firestoreService.addPet(pet);
+      final docRef = await _firestoreService.addPet(pet);
+
+      // Upload image if provided
+      if (imageBytes != null) {
+        final url = await _uploadPetImage(docRef, imageBytes);
+        if (url != null) {
+          await _firestoreService.updatePet(docRef, {'photoUrl': url});
+        }
+      }
+
       _isLoading = false;
       notifyListeners();
       return true;
@@ -87,14 +114,21 @@ class PetsProvider extends ChangeNotifier {
     int? age,
     PetGender? gender,
     String? photoUrl,
+    Uint8List? imageBytes,
   }) async {
     try {
       _isLoading = true;
       _errorMessage = null;
       notifyListeners();
 
+      // Upload image first if provided
+      if (imageBytes != null) {
+        final url = await _uploadPetImage(petId, imageBytes);
+        if (url != null) photoUrl = url;
+      }
+
       final Map<String, dynamic> updates = {};
-      
+
       if (name != null) updates['name'] = name;
       if (type != null) updates['type'] = type.name;
       if (breed != null) updates['breed'] = breed;
@@ -125,7 +159,7 @@ class PetsProvider extends ChangeNotifier {
       notifyListeners();
 
       await _firestoreService.deletePet(petId);
-      
+
       _isLoading = false;
       notifyListeners();
       return true;

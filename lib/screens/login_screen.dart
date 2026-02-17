@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import '../services/auth_service.dart';
 import 'signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -50,6 +51,58 @@ class _LoginScreenState extends State<LoginScreen> {
     // Navigation is handled by AuthWrapper in app.dart
   }
 
+  Future<void> _handleForgotPassword() async {
+    final emailController = TextEditingController(
+      text: _emailController.text.trim(),
+    );
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Reset Password'),
+        content: TextField(
+          controller: emailController,
+          decoration: const InputDecoration(
+            labelText: 'Email address',
+            hintText: 'Enter your email',
+          ),
+          keyboardType: TextInputType.emailAddress,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Send Link'),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true && emailController.text.trim().isNotEmpty) {
+      try {
+        await AuthService().sendPasswordResetEmail(emailController.text.trim());
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Password reset link sent! Check your email.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+    emailController.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -69,7 +122,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   return Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [trust, trust.withOpacity(0.7)],
+                        colors: [trust, trust.withAlpha(179)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
@@ -80,7 +133,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
 
             Positioned.fill(
-              child: Container(color: Colors.black.withOpacity(0.45)),
+              child: Container(color: Colors.black.withAlpha(115)),
             ),
 
             Column(
@@ -215,7 +268,19 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
 
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 8),
+
+                        Center(
+                          child: TextButton(
+                            onPressed: _handleForgotPassword,
+                            child: const Text(
+                              'Forgot Password?',
+                              style: TextStyle(color: Colors.black54),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 4),
 
                         Center(
                           child: TextButton(
