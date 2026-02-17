@@ -250,18 +250,38 @@ class _HomeDashboard extends StatelessWidget {
                       title: 'Trust Score',
                       subtitle: 'All caregivers are identity verified',
                       color: trust,
+                      onTap: () {
+                        // Navigate to profile to see trust score
+                        final homeState = context
+                            .findAncestorStateOfType<_HomeScreenState>();
+                        homeState?.setState(() => homeState._currentIndex = 3);
+                      },
                     ),
                     _featureTile(
                       icon: Icons.timeline,
                       title: 'Live Activity',
                       subtitle: 'Track walks in real time',
                       color: primary,
+                      onTap: () {
+                        // Navigate to activity tab
+                        final homeState = context
+                            .findAncestorStateOfType<_HomeScreenState>();
+                        homeState?.setState(() => homeState._currentIndex = 1);
+                      },
                     ),
                     _featureTile(
                       icon: Icons.history,
                       title: 'Walk History',
                       subtitle: 'View past walks & summaries',
                       color: primary,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const RoleBasedDashboard(),
+                          ),
+                        );
+                      },
                     ),
 
                     const SizedBox(height: 60),
@@ -365,46 +385,50 @@ class _HomeDashboard extends StatelessWidget {
     required String title,
     required String subtitle,
     required Color color,
+    VoidCallback? onTap,
   }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 12),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
-              shape: BoxShape.circle,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 12),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color),
             ),
-            child: Icon(icon, color: color),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(subtitle, style: const TextStyle(color: Colors.black54)),
-              ],
+                  const SizedBox(height: 4),
+                  Text(subtitle, style: const TextStyle(color: Colors.black54)),
+                ],
+              ),
             ),
-          ),
-          const Icon(Icons.chevron_right),
-        ],
+            const Icon(Icons.chevron_right),
+          ],
+        ),
       ),
     );
   }

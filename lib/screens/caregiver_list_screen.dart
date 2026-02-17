@@ -164,6 +164,7 @@ class _BuildCaregiverCardState extends State<_BuildCaregiverCard> {
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
   bool _isCreatingRequest = false;
+  int _selectedPetIndex = 0;
 
   Future<void> _selectDate() async {
     final picked = await showDatePicker(
@@ -233,7 +234,7 @@ class _BuildCaregiverCardState extends State<_BuildCaregiverCard> {
     setState(() => _isCreatingRequest = true);
 
     final currentUser = authProvider.user!;
-    final pet = petsProvider.pets.first;
+    final pet = petsProvider.pets[_selectedPetIndex];
 
     // Combine date and time
     final requestDateTime = DateTime(
@@ -362,6 +363,46 @@ class _BuildCaregiverCardState extends State<_BuildCaregiverCard> {
             ],
           ),
           const SizedBox(height: 16),
+
+          // Pet Selection
+          Consumer<PetsProvider>(
+            builder: (context, petsProvider, _) {
+              if (petsProvider.pets.isEmpty) {
+                return const SizedBox.shrink();
+              }
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: green.withAlpha(77)),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<int>(
+                    value: _selectedPetIndex < petsProvider.pets.length
+                        ? _selectedPetIndex
+                        : 0,
+                    isExpanded: true,
+                    icon: Icon(Icons.pets, color: green, size: 20),
+                    items: List.generate(petsProvider.pets.length, (i) {
+                      final p = petsProvider.pets[i];
+                      return DropdownMenuItem<int>(
+                        value: i,
+                        child: Text(
+                          '${p.name} (${p.typeDisplayName})',
+                          style: theme.textTheme.bodyMedium,
+                        ),
+                      );
+                    }),
+                    onChanged: (val) {
+                      if (val != null) setState(() => _selectedPetIndex = val);
+                    },
+                  ),
+                ),
+              );
+            },
+          ),
 
           // Date & Time Selection
           Container(
