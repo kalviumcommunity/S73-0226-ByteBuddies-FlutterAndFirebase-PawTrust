@@ -49,7 +49,7 @@ class _CaregiverListScreenState extends State<CaregiverListScreen> {
       backgroundColor: theme.scaffoldBackgroundColor,
       body: Column(
         children: [
-          // ðŸ”¹ HEADER WITH GRADIENT
+          // HEADER WITH GRADIENT
           Container(
             height: 220,
             width: double.infinity,
@@ -388,7 +388,7 @@ class _BuildCaregiverCardState extends State<_BuildCaregiverCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ðŸ‘¤ Avatar + Name Row
+          // Avatar + Name Row
           Row(
             children: [
               // Avatar with green badge

@@ -8,7 +8,8 @@ class RequestService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   /// Collection reference for requests
-  CollectionReference get _requestsCollection => _firestore.collection('requests');
+  CollectionReference get _requestsCollection =>
+      _firestore.collection('requests');
 
   /// Create a new care request from owner to caregiver
   Future<String?> createRequest({
@@ -48,17 +49,13 @@ class RequestService {
   }
 
   /// Get all requests for a specific caregiver (pending requests)
-  Future<List<RequestModel>> getCaregiverPendingRequests(String caregiverId) async {
+  Future<List<RequestModel>> getCaregiverPendingRequests(
+    String caregiverId,
+  ) async {
     try {
-      final querySnapshot = await _requestsCollection
-          .where('caregiverId', isEqualTo: caregiverId)
-          .where('status', isEqualTo: 'pending')
-          .orderBy('requestedDate', descending: false)
-          .get();
-
-      return querySnapshot.docs
-          .map((doc) => RequestModel.fromFirestore(doc))
-          .toList();
+      final all = await getCaregiverRequests(caregiverId);
+      return all.where((r) => r.status == RequestStatus.pending).toList()
+        ..sort((a, b) => a.requestedDate.compareTo(b.requestedDate));
     } catch (e) {
       debugPrint('Error fetching caregiver pending requests: $e');
       return [];
@@ -66,17 +63,13 @@ class RequestService {
   }
 
   /// Get all accepted/active requests for a specific caregiver
-  Future<List<RequestModel>> getCaregiverActiveRequests(String caregiverId) async {
+  Future<List<RequestModel>> getCaregiverActiveRequests(
+    String caregiverId,
+  ) async {
     try {
-      final querySnapshot = await _requestsCollection
-          .where('caregiverId', isEqualTo: caregiverId)
-          .where('status', isEqualTo: 'accepted')
-          .orderBy('requestedDate', descending: false)
-          .get();
-
-      return querySnapshot.docs
-          .map((doc) => RequestModel.fromFirestore(doc))
-          .toList();
+      final all = await getCaregiverRequests(caregiverId);
+      return all.where((r) => r.status == RequestStatus.accepted).toList()
+        ..sort((a, b) => a.requestedDate.compareTo(b.requestedDate));
     } catch (e) {
       debugPrint('Error fetching caregiver active requests: $e');
       return [];
@@ -84,19 +77,31 @@ class RequestService {
   }
 
   /// Get all completed requests for a specific caregiver
-  Future<List<RequestModel>> getCaregiverCompletedRequests(String caregiverId) async {
+  Future<List<RequestModel>> getCaregiverCompletedRequests(
+    String caregiverId,
+  ) async {
+    try {
+      final all = await getCaregiverRequests(caregiverId);
+      return all.where((r) => r.status == RequestStatus.completed).toList()
+        ..sort((a, b) => b.requestedDate.compareTo(a.requestedDate));
+    } catch (e) {
+      debugPrint('Error fetching caregiver completed requests: $e');
+      return [];
+    }
+  }
+
+  /// Get all requests for a specific caregiver (single-field query, no composite index needed)
+  Future<List<RequestModel>> getCaregiverRequests(String caregiverId) async {
     try {
       final querySnapshot = await _requestsCollection
           .where('caregiverId', isEqualTo: caregiverId)
-          .where('status', isEqualTo: 'completed')
-          .orderBy('requestedDate', descending: true)
           .get();
 
       return querySnapshot.docs
           .map((doc) => RequestModel.fromFirestore(doc))
           .toList();
     } catch (e) {
-      debugPrint('Error fetching caregiver completed requests: $e');
+      debugPrint('Error fetching caregiver requests: $e');
       return [];
     }
   }
@@ -106,12 +111,13 @@ class RequestService {
     try {
       final querySnapshot = await _requestsCollection
           .where('petOwnerId', isEqualTo: ownerId)
-          .orderBy('createdAt', descending: true)
           .get();
 
-      return querySnapshot.docs
+      final requests = querySnapshot.docs
           .map((doc) => RequestModel.fromFirestore(doc))
           .toList();
+      requests.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return requests;
     } catch (e) {
       debugPrint('Error fetching owner requests: $e');
       return [];
@@ -121,15 +127,8 @@ class RequestService {
   /// Get pending requests for a specific owner
   Future<List<RequestModel>> getOwnerPendingRequests(String ownerId) async {
     try {
-      final querySnapshot = await _requestsCollection
-          .where('petOwnerId', isEqualTo: ownerId)
-          .where('status', isEqualTo: 'pending')
-          .orderBy('createdAt', descending: true)
-          .get();
-
-      return querySnapshot.docs
-          .map((doc) => RequestModel.fromFirestore(doc))
-          .toList();
+      final all = await getOwnerRequests(ownerId);
+      return all.where((r) => r.status == RequestStatus.pending).toList();
     } catch (e) {
       debugPrint('Error fetching owner pending requests: $e');
       return [];
@@ -139,15 +138,9 @@ class RequestService {
   /// Get active/accepted requests for a specific owner
   Future<List<RequestModel>> getOwnerActiveRequests(String ownerId) async {
     try {
-      final querySnapshot = await _requestsCollection
-          .where('petOwnerId', isEqualTo: ownerId)
-          .where('status', isEqualTo: 'accepted')
-          .orderBy('requestedDate', descending: false)
-          .get();
-
-      return querySnapshot.docs
-          .map((doc) => RequestModel.fromFirestore(doc))
-          .toList();
+      final all = await getOwnerRequests(ownerId);
+      return all.where((r) => r.status == RequestStatus.accepted).toList()
+        ..sort((a, b) => a.requestedDate.compareTo(b.requestedDate));
     } catch (e) {
       debugPrint('Error fetching owner active requests: $e');
       return [];
@@ -157,9 +150,7 @@ class RequestService {
   /// Accept a request (caregiver action)
   Future<bool> acceptRequest(String requestId) async {
     try {
-      await _requestsCollection.doc(requestId).update({
-        'status': 'accepted',
-      });
+      await _requestsCollection.doc(requestId).update({'status': 'accepted'});
       debugPrint('Request accepted: $requestId');
       return true;
     } catch (e) {
@@ -171,9 +162,7 @@ class RequestService {
   /// Reject a request (caregiver action)
   Future<bool> rejectRequest(String requestId) async {
     try {
-      await _requestsCollection.doc(requestId).update({
-        'status': 'rejected',
-      });
+      await _requestsCollection.doc(requestId).update({'status': 'rejected'});
       debugPrint('Request rejected: $requestId');
       return true;
     } catch (e) {
@@ -224,34 +213,50 @@ class RequestService {
   }
 
   /// Stream of pending requests for a caregiver (real-time updates)
-  Stream<List<RequestModel>> streamCaregiverPendingRequests(String caregiverId) {
+  Stream<List<RequestModel>> streamCaregiverPendingRequests(
+    String caregiverId,
+  ) {
     return _requestsCollection
         .where('caregiverId', isEqualTo: caregiverId)
-        .where('status', isEqualTo: 'pending')
-        .orderBy('requestedDate', descending: false)
         .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => RequestModel.fromFirestore(doc)).toList());
+        .map((snapshot) {
+          final all = snapshot.docs
+              .map((doc) => RequestModel.fromFirestore(doc))
+              .toList();
+          final filtered =
+              all.where((r) => r.status == RequestStatus.pending).toList()
+                ..sort((a, b) => a.requestedDate.compareTo(b.requestedDate));
+          return filtered;
+        });
   }
 
   /// Stream of active requests for a caregiver
   Stream<List<RequestModel>> streamCaregiverActiveRequests(String caregiverId) {
     return _requestsCollection
         .where('caregiverId', isEqualTo: caregiverId)
-        .where('status', isEqualTo: 'accepted')
-        .orderBy('requestedDate', descending: false)
         .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => RequestModel.fromFirestore(doc)).toList());
+        .map((snapshot) {
+          final all = snapshot.docs
+              .map((doc) => RequestModel.fromFirestore(doc))
+              .toList();
+          final filtered =
+              all.where((r) => r.status == RequestStatus.accepted).toList()
+                ..sort((a, b) => a.requestedDate.compareTo(b.requestedDate));
+          return filtered;
+        });
   }
 
   /// Stream of all requests for owner
   Stream<List<RequestModel>> streamOwnerRequests(String ownerId) {
     return _requestsCollection
         .where('petOwnerId', isEqualTo: ownerId)
-        .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => RequestModel.fromFirestore(doc)).toList());
+        .map((snapshot) {
+          final all = snapshot.docs
+              .map((doc) => RequestModel.fromFirestore(doc))
+              .toList();
+          all.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          return all;
+        });
   }
 }
