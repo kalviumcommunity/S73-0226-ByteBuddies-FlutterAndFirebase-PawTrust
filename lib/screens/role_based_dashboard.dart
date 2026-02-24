@@ -591,7 +591,7 @@ class _RoleBasedDashboardState extends State<RoleBasedDashboard>
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${job.ownerName} â€¢ ${_formatDate(job.requestedDate)}',
+                  '${job.ownerName} • ${_formatDate(job.requestedDate)}',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: Colors.black54,
                   ),
@@ -804,7 +804,7 @@ class _RoleBasedDashboardState extends State<RoleBasedDashboard>
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${walk.petName} â€¢ ${_formatDate(walk.requestedDate)}',
+                  '${walk.petName} • ${_formatDate(walk.requestedDate)}',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: Colors.black54,
                   ),
@@ -899,7 +899,7 @@ class _RoleBasedDashboardState extends State<RoleBasedDashboard>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          success ? 'Request accepted! ðŸŽ‰' : 'Failed to accept request',
+          success ? 'Request accepted! 🎉' : 'Failed to accept request',
         ),
         backgroundColor: success ? Colors.green : Colors.red,
         duration: const Duration(seconds: 2),

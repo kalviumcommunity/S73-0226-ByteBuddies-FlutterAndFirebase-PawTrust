@@ -178,9 +178,7 @@ class _PetsScreenState extends State<PetsScreen> {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (_) => EditPetScreen(pet: pet),
-          ),
+          MaterialPageRoute(builder: (_) => EditPetScreen(pet: pet)),
         );
       },
       child: Container(
@@ -221,21 +219,21 @@ class _PetsScreenState extends State<PetsScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${pet.type.name[0].toUpperCase()}${pet.type.name.substring(1)} â€¢ ${pet.age} years â€¢ ${pet.gender.name[0].toUpperCase()}${pet.gender.name.substring(1)}',
+                    '${pet.type.name[0].toUpperCase()}${pet.type.name.substring(1)} • ${pet.age} years • ${pet.gender.name[0].toUpperCase()}${pet.gender.name.substring(1)}',
                     style: const TextStyle(color: Colors.black54),
                   ),
                   if (pet.breed != null && pet.breed!.isNotEmpty)
                     Text(
                       pet.breed!,
-                      style: const TextStyle(color: Colors.black45, fontSize: 12),
+                      style: const TextStyle(
+                        color: Colors.black45,
+                        fontSize: 12,
+                      ),
                     ),
                 ],
               ),
             ),
-            const Icon(
-              Icons.chevron_right,
-              color: Colors.black38,
-            ),
+            const Icon(Icons.chevron_right, color: Colors.black38),
           ],
         ),
       ),
