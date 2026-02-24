@@ -69,7 +69,7 @@ class CaregiverRequestCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '${request.petType.capitalize()} â€¢ From ${request.ownerName}',
+                      '${request.petType.capitalize()} • From ${request.ownerName}',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: Colors.black54,
                       ),
@@ -231,11 +231,7 @@ class OwnerRequestCard extends StatelessWidget {
                   color: primary.withAlpha(31),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
-                  Icons.person_rounded,
-                  color: primary,
-                  size: 24,
-                ),
+                child: Icon(Icons.person_rounded, color: primary, size: 24),
               ),
               const SizedBox(width: 12),
               Expanded(

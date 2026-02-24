@@ -183,7 +183,7 @@ class _HomeDashboard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Welcome Back, ${displayName.split(' ').first} ðŸ‘‹',
+                    'Welcome Back, ${displayName.split(' ').first} 👋',
                     style: const TextStyle(color: Colors.white70, fontSize: 16),
                   ),
                   const SizedBox(height: 6),
