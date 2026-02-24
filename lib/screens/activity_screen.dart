@@ -21,7 +21,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
     super.didChangeDependencies();
     if (!_didLoad) {
       _didLoad = true;
-      _loadData();
+      WidgetsBinding.instance.addPostFrameCallback((_) => _loadData());
     }
   }
 
