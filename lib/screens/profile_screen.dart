@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import '../app.dart';
 import '../providers/auth_provider.dart';
 import '../providers/pets_provider.dart';
 import '../models/user_model.dart';
+import '../widgets/paw_snackbar.dart';
 import 'edit_profile_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -10,12 +14,8 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final trust = theme.colorScheme.secondary;
-
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-
+      backgroundColor: PawTrustApp.surfaceLight,
       body: Consumer<AuthProvider>(
         builder: (context, authProvider, _) {
           final userProfile = authProvider.userProfile;
@@ -23,64 +23,80 @@ class ProfileScreen extends StatelessWidget {
 
           return Column(
             children: [
+              // ── Header ──
               Container(
-                height: 260,
                 width: double.infinity,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [trust, trust.withAlpha(217)],
+                    colors: [PawTrustApp.trustGreen, Color(0xFF15803D)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                 ),
-                padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
-                child: Row(
-                  children: [
-                    const SizedBox(width: 48),
-                    const Expanded(
-                      child: Center(
-                        child: Text(
-                          'Profile',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
+                child: SafeArea(
+                  bottom: false,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 12, 24, 36),
+                    child: Row(
+                      children: [
+                        const SizedBox(width: 48),
+                        Expanded(
+                          child: Center(
+                            child: Text(
+                              'Profile',
+                              style: GoogleFonts.poppins(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
+                        IconButton(
+                          icon: const Icon(
+                            Icons.refresh_rounded,
+                            color: Colors.white,
+                          ),
+                          onPressed: () {
+                            HapticFeedback.lightImpact();
+                            authProvider.refreshProfile();
+                          },
+                        ),
+                      ],
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.refresh, color: Colors.white),
-                      onPressed: () => authProvider.refreshProfile(),
-                    ),
-                  ],
+                  ),
                 ),
               ),
 
+              // ── Content ──
               Expanded(
                 child: Container(
                   width: double.infinity,
-                  transform: Matrix4.translationValues(0, -30, 0),
-                  decoration: BoxDecoration(
-                    color: theme.scaffoldBackgroundColor,
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(32),
+                  transform: Matrix4.translationValues(0, -24, 0),
+                  decoration: const BoxDecoration(
+                    color: PawTrustApp.surfaceLight,
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(28),
                     ),
                   ),
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
                   child: ListView(
                     physics: const BouncingScrollPhysics(),
                     children: [
+                      // ── Profile card ──
                       Container(
                         padding: const EdgeInsets.all(24),
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(24),
+                          borderRadius: BorderRadius.circular(22),
+                          border: Border.all(
+                            color: PawTrustApp.borderColor.withAlpha(100),
+                          ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withAlpha(20),
-                              blurRadius: 24,
-                              offset: const Offset(0, 12),
+                              color: Colors.black.withAlpha(8),
+                              blurRadius: 20,
+                              offset: const Offset(0, 6),
                             ),
                           ],
                         ),
@@ -90,16 +106,33 @@ class ProfileScreen extends StatelessWidget {
                               padding: const EdgeInsets.all(4),
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: trust,
+                                gradient: const LinearGradient(
+                                  colors: [
+                                    PawTrustApp.trustGreen,
+                                    Color(0xFF15803D),
+                                  ],
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: PawTrustApp.trustGreen.withAlpha(50),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
                               ),
                               child: CircleAvatar(
                                 radius: 42,
-                                backgroundColor: trust.withAlpha(31),
+                                backgroundColor: PawTrustApp.trustGreen
+                                    .withAlpha(25),
                                 backgroundImage: userProfile?.photoUrl != null
                                     ? NetworkImage(userProfile!.photoUrl!)
                                     : null,
                                 child: userProfile?.photoUrl == null
-                                    ? Icon(Icons.person, size: 44, color: trust)
+                                    ? const Icon(
+                                        Icons.person_rounded,
+                                        size: 44,
+                                        color: PawTrustApp.trustGreen,
+                                      )
                                     : null,
                               ),
                             ),
@@ -108,47 +141,64 @@ class ProfileScreen extends StatelessWidget {
                               userProfile?.fullName ??
                                   user?.displayName ??
                                   'User',
-                              style: const TextStyle(
+                              style: GoogleFonts.poppins(
                                 fontSize: 22,
-                                fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.w700,
+                                color: PawTrustApp.textPrimary,
                               ),
                             ),
-                            const SizedBox(height: 6),
-                            Text(
-                              userProfile?.role == UserRole.caregiver
-                                  ? 'Verified Caregiver'
-                                  : 'Pet Owner',
-                              style: const TextStyle(color: Colors.black54),
+                            const SizedBox(height: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color:
+                                    (userProfile?.role == UserRole.caregiver
+                                            ? const Color(0xFF7C3AED)
+                                            : PawTrustApp.primaryBlue)
+                                        .withAlpha(20),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                userProfile?.role == UserRole.caregiver
+                                    ? 'Verified Caregiver'
+                                    : 'Pet Owner',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: userProfile?.role == UserRole.caregiver
+                                      ? const Color(0xFF7C3AED)
+                                      : PawTrustApp.primaryBlue,
+                                ),
+                              ),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               user?.email ?? '',
-                              style: const TextStyle(
-                                color: Colors.black38,
+                              style: GoogleFonts.poppins(
+                                color: PawTrustApp.textSecondary,
                                 fontSize: 12,
                               ),
                             ),
-
-                            const SizedBox(height: 24),
+                            const SizedBox(height: 20),
 
                             Consumer<PetsProvider>(
                               builder: (context, petsProvider, _) {
                                 return Row(
                                   children: [
                                     _statItem(
-                                      context,
                                       'Trust',
                                       '${userProfile?.trustScore ?? 0}%',
                                     ),
-                                    const SizedBox(width: 16),
+                                    const SizedBox(width: 12),
                                     _statItem(
-                                      context,
                                       'Walks',
                                       '${userProfile?.completedWalks ?? 0}',
                                     ),
-                                    const SizedBox(width: 16),
+                                    const SizedBox(width: 12),
                                     _statItem(
-                                      context,
                                       'Pets',
                                       '${petsProvider.pets.length}',
                                     ),
@@ -160,16 +210,23 @@ class ProfileScreen extends StatelessWidget {
                         ),
                       ),
 
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 28),
 
-                      _sectionTitle('Account'),
+                      Text(
+                        'Account',
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: PawTrustApp.textPrimary,
+                        ),
+                      ),
                       const SizedBox(height: 12),
 
                       _settingsTile(
-                        context,
-                        icon: Icons.person_outline,
+                        icon: Icons.person_outline_rounded,
                         title: 'Edit Profile',
                         onTap: () {
+                          HapticFeedback.selectionClick();
                           Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -179,76 +236,60 @@ class ProfileScreen extends StatelessWidget {
                         },
                       ),
                       _settingsTile(
-                        context,
-                        icon: Icons.verified_user,
+                        icon: Icons.verified_user_rounded,
                         title: 'Verification Status',
                         trailing: userProfile?.isVerified == true
                             ? const Icon(
-                                Icons.check_circle,
-                                color: Colors.green,
+                                Icons.check_circle_rounded,
+                                color: PawTrustApp.trustGreen,
+                                size: 22,
                               )
                             : null,
                       ),
                       _settingsTile(
-                        context,
-                        icon: Icons.notifications_none,
+                        icon: Icons.notifications_none_rounded,
                         title: 'Notifications',
                       ),
 
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 28),
 
                       SizedBox(
                         width: double.infinity,
                         height: 52,
                         child: ElevatedButton(
                           onPressed: () async {
-                            final confirm = await showDialog<bool>(
-                              context: context,
-                              builder: (context) => AlertDialog(
-                                title: const Text('Logout'),
-                                content: const Text(
-                                  'Are you sure you want to logout?',
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () =>
-                                        Navigator.pop(context, false),
-                                    child: const Text('Cancel'),
-                                  ),
-                                  TextButton(
-                                    onPressed: () =>
-                                        Navigator.pop(context, true),
-                                    child: const Text(
-                                      'Logout',
-                                      style: TextStyle(color: Colors.red),
-                                    ),
-                                  ),
-                                ],
-                              ),
+                            HapticFeedback.mediumImpact();
+                            final confirm = await PawDialog.confirm(
+                              context,
+                              title: 'Logout',
+                              message: 'Are you sure you want to logout?',
+                              confirmLabel: 'Logout',
+                              isDangerous: true,
                             );
 
                             if (confirm == true) {
                               await authProvider.signOut();
-                              // Navigation handled by AuthWrapper
                             }
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red.shade400,
+                            backgroundColor: const Color(0xFFEF4444),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
                             ),
-                            elevation: 4,
+                            elevation: 0,
                           ),
-                          child: const Text(
+                          child: Text(
                             'Logout',
-                            style: TextStyle(
+                            style: GoogleFonts.poppins(
                               color: Colors.white,
-                              fontSize: 16,
+                              fontSize: 15,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
                       ),
+
+                      const SizedBox(height: 80),
                     ],
                   ),
                 ),
@@ -260,51 +301,56 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _statItem(BuildContext context, String label, String value) {
-    final theme = Theme.of(context);
-
+  Widget _statItem(String label, String value) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
+        padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          color: theme.scaffoldBackgroundColor,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: theme.dividerColor),
+          color: PawTrustApp.surfaceLight,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: PawTrustApp.borderColor),
         ),
         child: Column(
           children: [
             Text(
               value,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: GoogleFonts.poppins(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: PawTrustApp.textPrimary,
+              ),
             ),
-            const SizedBox(height: 4),
-            Text(label, style: const TextStyle(color: Colors.black54)),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: GoogleFonts.poppins(
+                color: PawTrustApp.textSecondary,
+                fontSize: 12,
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _settingsTile(
-    BuildContext context, {
+  Widget _settingsTile({
     required IconData icon,
     required String title,
     Widget? trailing,
     VoidCallback? onTap,
   }) {
-    final theme = Theme.of(context);
-    final trust = theme.colorScheme.secondary;
-
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: PawTrustApp.borderColor.withAlpha(100)),
           boxShadow: [
-            BoxShadow(color: Colors.black.withAlpha(10), blurRadius: 12),
+            BoxShadow(color: Colors.black.withAlpha(5), blurRadius: 10),
           ],
         ),
         child: Row(
@@ -312,29 +358,30 @@ class ProfileScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: trust.withAlpha(31),
-                shape: BoxShape.circle,
+                color: PawTrustApp.primaryBlue.withAlpha(20),
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icon, color: trust),
+              child: Icon(icon, color: PawTrustApp.primaryBlue, size: 20),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 14),
             Expanded(
               child: Text(
                 title,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                style: GoogleFonts.poppins(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: PawTrustApp.textPrimary,
+                ),
               ),
             ),
-            trailing ?? const Icon(Icons.chevron_right),
+            trailing ??
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: PawTrustApp.textSecondary.withAlpha(120),
+                ),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _sectionTitle(String title) {
-    return Text(
-      title,
-      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
     );
   }
 }

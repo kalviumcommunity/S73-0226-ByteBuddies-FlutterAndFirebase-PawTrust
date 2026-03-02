@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import '../app.dart';
 import '../models/user_model.dart';
 import '../providers/auth_provider.dart';
 import '../providers/request_provider.dart';
 import '../providers/pets_provider.dart';
 import '../services/caregiver_service.dart';
+import '../widgets/paw_snackbar.dart';
+import '../widgets/shimmer_loading.dart';
 
 class CaregiverListScreen extends StatefulWidget {
   const CaregiverListScreen({super.key});
@@ -42,77 +47,86 @@ class _CaregiverListScreenState extends State<CaregiverListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final green = theme.colorScheme.tertiary;
-
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: PawTrustApp.surfaceLight,
       body: Column(
         children: [
-          // HEADER WITH GRADIENT
+          // ── Header ──
           Container(
-            height: 220,
             width: double.infinity,
-            decoration: BoxDecoration(
+            padding: EdgeInsets.fromLTRB(
+              16,
+              MediaQuery.of(context).padding.top + 8,
+              24,
+              28,
+            ),
+            decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [green, green.withAlpha(217)],
+                colors: [PawTrustApp.tertiary, Color(0xFF9333EA)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius: const BorderRadius.vertical(
-                bottom: Radius.circular(32),
-              ),
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
             ),
-            padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.white),
-                  onPressed: () => Navigator.pop(context),
-                  padding: EdgeInsets.zero,
+                  icon: const Icon(
+                    Icons.arrow_back_rounded,
+                    color: Colors.white,
+                  ),
+                  onPressed: () {
+                    HapticFeedback.selectionClick();
+                    Navigator.pop(context);
+                  },
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  'Find Your Perfect',
-                  style: TextStyle(color: Colors.white70, fontSize: 16),
+                Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: Text(
+                    'Find Your Perfect',
+                    style: GoogleFonts.poppins(
+                      color: Colors.white70,
+                      fontSize: 14,
+                    ),
+                  ),
                 ),
-                const Text(
-                  'Caregiver',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
+                Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: Text(
+                    'Caregiver',
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],
             ),
           ),
 
-          // âšª CAREGIVER LIST
+          // ── Content ──
           Expanded(
-            child: Container(
-              width: double.infinity,
-              transform: Matrix4.translationValues(0, -30, 0),
-              decoration: BoxDecoration(
-                color: theme.scaffoldBackgroundColor,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(32),
-                ),
-              ),
-              padding: const EdgeInsets.all(24),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
               child: Column(
                 children: [
                   // Search Bar
                   TextField(
                     controller: _searchController,
                     onChanged: (val) => setState(() => _searchQuery = val),
+                    style: GoogleFonts.poppins(fontSize: 14),
                     decoration: InputDecoration(
                       hintText: 'Search caregivers...',
-                      prefixIcon: const Icon(Icons.search),
+                      hintStyle: GoogleFonts.poppins(
+                        color: PawTrustApp.textSecondary,
+                      ),
+                      prefixIcon: const Icon(Icons.search_rounded),
                       suffixIcon: _searchQuery.isNotEmpty
                           ? IconButton(
-                              icon: const Icon(Icons.clear),
+                              icon: const Icon(Icons.clear_rounded),
                               onPressed: () {
                                 _searchController.clear();
                                 setState(() => _searchQuery = '');
@@ -120,23 +134,7 @@ class _CaregiverListScreenState extends State<CaregiverListScreen> {
                             )
                           : null,
                       filled: true,
-                      fillColor: Colors.white,
-                      contentPadding: const EdgeInsets.symmetric(
-                        vertical: 0,
-                        horizontal: 16,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(color: green.withAlpha(77)),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(color: green.withAlpha(77)),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(color: green),
-                      ),
+                      fillColor: PawTrustApp.cardWhite,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -148,8 +146,9 @@ class _CaregiverListScreenState extends State<CaregiverListScreen> {
                       builder: (context, snapshot) {
                         if (snapshot.connectionState ==
                             ConnectionState.waiting) {
-                          return const Center(
-                            child: CircularProgressIndicator(),
+                          return const Padding(
+                            padding: EdgeInsets.only(top: 8),
+                            child: ShimmerList(itemCount: 4),
                           );
                         }
 
@@ -161,20 +160,33 @@ class _CaregiverListScreenState extends State<CaregiverListScreen> {
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(
-                                  Icons.error_outline,
-                                  size: 48,
-                                  color: Colors.red.shade300,
+                                Container(
+                                  padding: const EdgeInsets.all(18),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFEE2E2),
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: const Icon(
+                                    Icons.error_outline_rounded,
+                                    size: 40,
+                                    color: Color(0xFFEF4444),
+                                  ),
                                 ),
                                 const SizedBox(height: 16),
-                                const Text(
+                                Text(
                                   'Unable to load caregivers',
-                                  style: TextStyle(fontWeight: FontWeight.w500),
+                                  style: GoogleFonts.poppins(
+                                    fontWeight: FontWeight.w600,
+                                    color: PawTrustApp.textPrimary,
+                                  ),
                                 ),
-                                const SizedBox(height: 8),
-                                const Text(
+                                const SizedBox(height: 4),
+                                Text(
                                   'Please check your connection and try again',
-                                  style: TextStyle(color: Colors.grey),
+                                  style: GoogleFonts.poppins(
+                                    color: PawTrustApp.textSecondary,
+                                    fontSize: 13,
+                                  ),
                                 ),
                               ],
                             ),
@@ -185,7 +197,7 @@ class _CaregiverListScreenState extends State<CaregiverListScreen> {
                         final caregivers = _filterCaregivers(allCaregivers);
 
                         if (allCaregivers.isEmpty) {
-                          return _EmptyCaregiverState(green);
+                          return const _EmptyCaregiverState();
                         }
 
                         if (caregivers.isEmpty) {
@@ -193,19 +205,32 @@ class _CaregiverListScreenState extends State<CaregiverListScreen> {
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(
-                                  Icons.search_off,
-                                  size: 48,
-                                  color: Colors.grey.shade400,
+                                Container(
+                                  padding: const EdgeInsets.all(18),
+                                  decoration: BoxDecoration(
+                                    color: PawTrustApp.borderColor,
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: const Icon(
+                                    Icons.search_off_rounded,
+                                    size: 40,
+                                    color: PawTrustApp.textSecondary,
+                                  ),
                                 ),
                                 const SizedBox(height: 16),
-                                const Text('No caregivers match your search'),
+                                Text(
+                                  'No caregivers match your search',
+                                  style: GoogleFonts.poppins(
+                                    color: PawTrustApp.textSecondary,
+                                  ),
+                                ),
                               ],
                             ),
                           );
                         }
 
                         return RefreshIndicator(
+                          color: PawTrustApp.tertiary,
                           onRefresh: () async {
                             setState(() {
                               _caregiversFuture = _caregiverService
@@ -215,7 +240,7 @@ class _CaregiverListScreenState extends State<CaregiverListScreen> {
                           child: ListView.separated(
                             physics: const AlwaysScrollableScrollPhysics(),
                             itemCount: caregivers.length,
-                            separatorBuilder: (_, _) =>
+                            separatorBuilder: (_, __) =>
                                 const SizedBox(height: 12),
                             itemBuilder: (context, index) {
                               return _BuildCaregiverCard(
@@ -253,6 +278,7 @@ class _BuildCaregiverCardState extends State<_BuildCaregiverCard> {
   int _selectedPetIndex = 0;
 
   Future<void> _selectDate() async {
+    HapticFeedback.selectionClick();
     final picked = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
@@ -265,6 +291,7 @@ class _BuildCaregiverCardState extends State<_BuildCaregiverCard> {
   }
 
   Future<void> _selectTime() async {
+    HapticFeedback.selectionClick();
     final picked = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.now(),
@@ -274,14 +301,9 @@ class _BuildCaregiverCardState extends State<_BuildCaregiverCard> {
     }
   }
 
-  Future<void> _handleRequestCaregio() async {
+  Future<void> _handleRequestCaregiver() async {
     if (_selectedDate == null || _selectedTime == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select date and time'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      PawSnackBar.warning(context, 'Please select date and time');
       return;
     }
 
@@ -290,39 +312,26 @@ class _BuildCaregiverCardState extends State<_BuildCaregiverCard> {
     final petsProvider = context.read<PetsProvider>();
 
     if (authProvider.user == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Please login first')));
+      PawSnackBar.error(context, 'Please login first');
       return;
     }
 
-    // Check if pets are still loading
     if (petsProvider.isLoading) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Loading your pets, please wait...'),
-          backgroundColor: Colors.blue,
-        ),
-      );
+      PawSnackBar.info(context, 'Loading your pets, please wait...');
       return;
     }
 
     if (petsProvider.pets.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please add a pet first'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      PawSnackBar.warning(context, 'Please add a pet first');
       return;
     }
 
+    HapticFeedback.lightImpact();
     setState(() => _isCreatingRequest = true);
 
     final currentUser = authProvider.user!;
     final pet = petsProvider.pets[_selectedPetIndex];
 
-    // Combine date and time
     final requestDateTime = DateTime(
       _selectedDate!.year,
       _selectedDate!.month,
@@ -348,40 +357,31 @@ class _BuildCaregiverCardState extends State<_BuildCaregiverCard> {
     if (!mounted) return;
 
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Request sent to ${widget.caregiver.fullName}'),
-          backgroundColor: Colors.green,
-        ),
+      PawSnackBar.success(
+        context,
+        'Request sent to ${widget.caregiver.fullName}',
       );
       Navigator.pop(context);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            requestProvider.errorMessage ?? 'Failed to send request',
-          ),
-          backgroundColor: Colors.red,
-        ),
+      PawSnackBar.error(
+        context,
+        requestProvider.errorMessage ?? 'Failed to send request',
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final green = theme.colorScheme.tertiary;
-
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: PawTrustApp.cardWhite,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(20),
+            color: Colors.black.withAlpha(10),
             blurRadius: 16,
-            offset: const Offset(0, 8),
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -391,56 +391,71 @@ class _BuildCaregiverCardState extends State<_BuildCaregiverCard> {
           // Avatar + Name Row
           Row(
             children: [
-              // Avatar with green badge
               Container(
-                width: 70,
-                height: 70,
+                width: 64,
+                height: 64,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: LinearGradient(
-                    colors: [green.withAlpha(51), green.withAlpha(20)],
+                    colors: [
+                      PawTrustApp.tertiary.withAlpha(51),
+                      PawTrustApp.tertiary.withAlpha(20),
+                    ],
                   ),
                 ),
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
-                    Icon(Icons.person, size: 40, color: green),
+                    const Icon(
+                      Icons.person_rounded,
+                      size: 36,
+                      color: PawTrustApp.tertiary,
+                    ),
                     Positioned(
                       bottom: 0,
                       right: 0,
                       child: Container(
-                        padding: const EdgeInsets.all(4),
+                        padding: const EdgeInsets.all(3),
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: green,
+                          color: PawTrustApp.tertiary,
+                          boxShadow: [
+                            BoxShadow(
+                              color: PawTrustApp.tertiary.withAlpha(77),
+                              blurRadius: 4,
+                            ),
+                          ],
                         ),
                         child: const Icon(
-                          Icons.verified_sharp,
+                          Icons.verified_rounded,
                           color: Colors.white,
-                          size: 16,
+                          size: 14,
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       widget.caregiver.fullName,
-                      style: theme.textTheme.headlineSmall?.copyWith(
+                      style: GoogleFonts.poppins(
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
+                        color: PawTrustApp.textPrimary,
                       ),
                       maxLines: 2,
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 2),
                     Text(
                       'Available Caregiver',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: Colors.black54,
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        color: PawTrustApp.textSecondary,
                       ),
                     ),
                   ],
@@ -460,9 +475,9 @@ class _BuildCaregiverCardState extends State<_BuildCaregiverCard> {
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: green.withAlpha(77)),
+                  color: PawTrustApp.surfaceLight,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: PawTrustApp.tertiary.withAlpha(51)),
                 ),
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<int>(
@@ -470,15 +485,20 @@ class _BuildCaregiverCardState extends State<_BuildCaregiverCard> {
                         ? _selectedPetIndex
                         : 0,
                     isExpanded: true,
-                    icon: Icon(Icons.pets, color: green, size: 20),
+                    icon: const Icon(
+                      Icons.pets_rounded,
+                      color: PawTrustApp.tertiary,
+                      size: 20,
+                    ),
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: PawTrustApp.textPrimary,
+                    ),
                     items: List.generate(petsProvider.pets.length, (i) {
                       final p = petsProvider.pets[i];
                       return DropdownMenuItem<int>(
                         value: i,
-                        child: Text(
-                          '${p.name} (${p.typeDisplayName})',
-                          style: theme.textTheme.bodyMedium,
-                        ),
+                        child: Text('${p.name} (${p.typeDisplayName})'),
                       );
                     }),
                     onChanged: (val) {
@@ -494,102 +514,101 @@ class _BuildCaregiverCardState extends State<_BuildCaregiverCard> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.grey.withAlpha(13),
-              borderRadius: BorderRadius.circular(12),
+              color: PawTrustApp.surfaceLight,
+              borderRadius: BorderRadius.circular(14),
             ),
-            child: Column(
+            child: Row(
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: InkWell(
-                        onTap: _selectDate,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: _selectedDate != null
-                                  ? green
-                                  : Colors.grey.withAlpha(77),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.calendar_today,
-                                size: 18,
-                                color: green,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                _selectedDate == null
-                                    ? 'Select Date'
-                                    : '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
-                                style: theme.textTheme.bodySmall,
-                              ),
-                            ],
-                          ),
+                Expanded(
+                  child: InkWell(
+                    onTap: _selectDate,
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: PawTrustApp.cardWhite,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: _selectedDate != null
+                              ? PawTrustApp.tertiary
+                              : PawTrustApp.borderColor,
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: InkWell(
-                        onTap: _selectTime,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 10,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.calendar_today_rounded,
+                            size: 16,
+                            color: PawTrustApp.tertiary,
                           ),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: _selectedTime != null
-                                  ? green
-                                  : Colors.grey.withAlpha(77),
-                            ),
+                          const SizedBox(width: 8),
+                          Text(
+                            _selectedDate == null
+                                ? 'Select Date'
+                                : '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
+                            style: GoogleFonts.poppins(fontSize: 12),
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.access_time, size: 18, color: green),
-                              const SizedBox(width: 8),
-                              Text(
-                                _selectedTime == null
-                                    ? 'Select Time'
-                                    : _selectedTime!.format(context),
-                                style: theme.textTheme.bodySmall,
-                              ),
-                            ],
-                          ),
-                        ),
+                        ],
                       ),
                     ),
-                  ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: InkWell(
+                    onTap: _selectTime,
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: PawTrustApp.cardWhite,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: _selectedTime != null
+                              ? PawTrustApp.tertiary
+                              : PawTrustApp.borderColor,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.access_time_rounded,
+                            size: 16,
+                            color: PawTrustApp.tertiary,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            _selectedTime == null
+                                ? 'Select Time'
+                                : _selectedTime!.format(context),
+                            style: GoogleFonts.poppins(fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
 
           // Request Button
           SizedBox(
             width: double.infinity,
-            height: 44,
+            height: 46,
             child: ElevatedButton.icon(
-              onPressed: _isCreatingRequest ? null : _handleRequestCaregio,
+              onPressed: _isCreatingRequest ? null : _handleRequestCaregiver,
               style: ElevatedButton.styleFrom(
-                backgroundColor: green,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
+                backgroundColor: PawTrustApp.tertiary,
               ),
               icon: _isCreatingRequest
                   ? const SizedBox(
@@ -600,13 +619,10 @@ class _BuildCaregiverCardState extends State<_BuildCaregiverCard> {
                         valueColor: AlwaysStoppedAnimation(Colors.white),
                       ),
                     )
-                  : const Icon(Icons.check_circle_outline, size: 20),
+                  : const Icon(Icons.check_circle_outline_rounded, size: 20),
               label: Text(
                 _isCreatingRequest ? 'Sending...' : 'Send Request',
-                style: theme.textTheme.labelLarge?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
               ),
             ),
           ),
@@ -617,14 +633,10 @@ class _BuildCaregiverCardState extends State<_BuildCaregiverCard> {
 }
 
 class _EmptyCaregiverState extends StatelessWidget {
-  final Color color;
-
-  const _EmptyCaregiverState(this.color);
+  const _EmptyCaregiverState();
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
       children: [
@@ -636,24 +648,31 @@ class _EmptyCaregiverState extends StatelessWidget {
                 width: 80,
                 height: 80,
                 decoration: BoxDecoration(
-                  color: color.withAlpha(26),
-                  shape: BoxShape.circle,
+                  color: PawTrustApp.tertiary.withAlpha(26),
+                  borderRadius: BorderRadius.circular(24),
                 ),
-                child: Icon(Icons.people_outline, size: 44, color: color),
+                child: const Icon(
+                  Icons.people_outline_rounded,
+                  size: 44,
+                  color: PawTrustApp.tertiary,
+                ),
               ),
               const SizedBox(height: 20),
               Text(
                 'No Caregivers Available',
-                style: theme.textTheme.headlineSmall?.copyWith(
+                style: GoogleFonts.poppins(
+                  fontSize: 20,
                   fontWeight: FontWeight.bold,
+                  color: PawTrustApp.textPrimary,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
                 'Check back later or try refreshing the page.',
                 textAlign: TextAlign.center,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: Colors.black54,
+                style: GoogleFonts.poppins(
+                  color: PawTrustApp.textSecondary,
+                  fontSize: 14,
                 ),
               ),
             ],
