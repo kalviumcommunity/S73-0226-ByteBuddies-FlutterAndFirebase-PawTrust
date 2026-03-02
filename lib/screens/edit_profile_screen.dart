@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import '../models/user_model.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -397,9 +398,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                     child: Row(
                                       children: [
                                         Icon(
-                                          authProvider.userProfile?.role
-                                                      .toString() ==
-                                                  'UserRole.caregiver'
+                                          authProvider.userProfile?.role ==
+                                                  UserRole.caregiver
                                               ? Icons.directions_walk
                                               : Icons.pets,
                                           size: 20,
@@ -408,9 +408,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                         const SizedBox(width: 12),
                                         Expanded(
                                           child: Text(
-                                            authProvider.userProfile?.role
-                                                        .toString() ==
-                                                    'UserRole.caregiver'
+                                            authProvider.userProfile?.role ==
+                                                    UserRole.caregiver
                                                 ? 'Caregiver'
                                                 : 'Pet Owner',
                                             style: theme.textTheme.bodyMedium

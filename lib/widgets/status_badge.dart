@@ -5,11 +5,7 @@ class StatusBadge extends StatelessWidget {
   final RequestStatus status;
   final bool isCompact;
 
-  const StatusBadge({
-    super.key,
-    required this.status,
-    this.isCompact = false,
-  });
+  const StatusBadge({super.key, required this.status, this.isCompact = false});
 
   Color _getStatusColor() {
     switch (status) {
@@ -18,7 +14,7 @@ class StatusBadge extends StatelessWidget {
       case RequestStatus.accepted:
         return const Color(0xFF10B981); // Green
       case RequestStatus.rejected:
-        return const Color(0xFEF2728C); // Red
+        return const Color(0xFFF2728C); // Red
       case RequestStatus.completed:
         return const Color(0xFF6366F1); // Indigo
     }
@@ -66,11 +62,7 @@ class StatusBadge extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              _getStatusIcon(),
-              size: 14,
-              color: color,
-            ),
+            Icon(_getStatusIcon(), size: 14, color: color),
             const SizedBox(width: 4),
             Text(
               label,
@@ -94,11 +86,7 @@ class StatusBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            _getStatusIcon(),
-            size: 16,
-            color: color,
-          ),
+          Icon(_getStatusIcon(), size: 16, color: color),
           const SizedBox(width: 6),
           Text(
             label,

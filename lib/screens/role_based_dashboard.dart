@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import '../app.dart';
 import '../models/user_model.dart';
 import '../models/request_model.dart';
 import '../providers/auth_provider.dart';
 import '../providers/request_provider.dart';
 import '../providers/walks_provider.dart';
+import '../widgets/paw_snackbar.dart';
 import '../widgets/request_card.dart';
+import '../widgets/shimmer_loading.dart';
 import '../widgets/status_badge.dart';
 import 'caregiver_job_screen.dart';
 
@@ -80,8 +84,11 @@ class _RoleBasedDashboardState extends State<RoleBasedDashboard>
 
     if (user == null) {
       return Scaffold(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        body: const Center(child: CircularProgressIndicator()),
+        backgroundColor: PawTrustApp.surfaceLight,
+        body: const Padding(
+          padding: EdgeInsets.all(24),
+          child: ShimmerList(itemCount: 5),
+        ),
       );
     }
 
@@ -89,7 +96,7 @@ class _RoleBasedDashboardState extends State<RoleBasedDashboard>
     final isCaregiver = user.role == UserRole.caregiver;
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: PawTrustApp.surfaceLight,
       body: Column(
         children: [
           // Header
@@ -209,7 +216,10 @@ class _RoleBasedDashboardState extends State<RoleBasedDashboard>
     final pendingRequests = requestProvider.pendingRequests;
 
     if (requestProvider.isLoading && pendingRequests.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return const Padding(
+        padding: EdgeInsets.all(24),
+        child: ShimmerList(itemCount: 3),
+      );
     }
 
     if (pendingRequests.isEmpty) {
@@ -254,7 +264,10 @@ class _RoleBasedDashboardState extends State<RoleBasedDashboard>
     final activeJobs = requestProvider.activeRequests;
 
     if (requestProvider.isLoading && activeJobs.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return const Padding(
+        padding: EdgeInsets.all(24),
+        child: ShimmerList(itemCount: 3),
+      );
     }
 
     if (activeJobs.isEmpty) {
@@ -291,7 +304,10 @@ class _RoleBasedDashboardState extends State<RoleBasedDashboard>
     final completedJobs = requestProvider.completedRequests;
 
     if (requestProvider.isLoading && completedJobs.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return const Padding(
+        padding: EdgeInsets.all(24),
+        child: ShimmerList(itemCount: 3),
+      );
     }
 
     if (completedJobs.isEmpty) {
@@ -331,7 +347,10 @@ class _RoleBasedDashboardState extends State<RoleBasedDashboard>
     final ownerPending = requestProvider.ownerPendingRequests;
 
     if (requestProvider.isLoading && ownerPending.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return const Padding(
+        padding: EdgeInsets.all(24),
+        child: ShimmerList(itemCount: 3),
+      );
     }
 
     if (ownerPending.isEmpty) {
@@ -375,7 +394,10 @@ class _RoleBasedDashboardState extends State<RoleBasedDashboard>
     final activeWalk = requestProvider.ownerActiveRequests.firstOrNull;
 
     if (requestProvider.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Padding(
+        padding: EdgeInsets.all(24),
+        child: ShimmerList(itemCount: 2),
+      );
     }
 
     if (activeWalk == null) {
@@ -412,7 +434,10 @@ class _RoleBasedDashboardState extends State<RoleBasedDashboard>
     final history = requestProvider.ownerCompletedRequests;
 
     if (requestProvider.isLoading && history.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return const Padding(
+        padding: EdgeInsets.all(24),
+        child: ShimmerList(itemCount: 3),
+      );
     }
 
     if (history.isEmpty) {
@@ -896,15 +921,11 @@ class _RoleBasedDashboardState extends State<RoleBasedDashboard>
 
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          success ? 'Request accepted! 🎉' : 'Failed to accept request',
-        ),
-        backgroundColor: success ? Colors.green : Colors.red,
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    if (success) {
+      PawSnackBar.success(context, 'Request accepted! 🎉');
+    } else {
+      PawSnackBar.error(context, 'Failed to accept request');
+    }
   }
 
   Future<void> _handleRejectRequest(RequestModel request) async {
@@ -913,15 +934,11 @@ class _RoleBasedDashboardState extends State<RoleBasedDashboard>
 
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          success ? 'Request rejected' : 'Failed to reject request',
-        ),
-        backgroundColor: success ? Colors.orange : Colors.red,
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    if (success) {
+      PawSnackBar.warning(context, 'Request rejected');
+    } else {
+      PawSnackBar.error(context, 'Failed to reject request');
+    }
   }
 
   Future<void> _handleCancelRequest(RequestModel request) async {
@@ -930,14 +947,10 @@ class _RoleBasedDashboardState extends State<RoleBasedDashboard>
 
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          success ? 'Request cancelled' : 'Failed to cancel request',
-        ),
-        backgroundColor: success ? Colors.orange : Colors.red,
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    if (success) {
+      PawSnackBar.warning(context, 'Request cancelled');
+    } else {
+      PawSnackBar.error(context, 'Failed to cancel request');
+    }
   }
 }

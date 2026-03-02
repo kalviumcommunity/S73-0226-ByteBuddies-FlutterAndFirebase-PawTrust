@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import '../app.dart';
 import '../providers/auth_provider.dart';
 import '../providers/request_provider.dart';
 import '../models/request_model.dart';
 import '../models/user_model.dart';
+import '../widgets/shimmer_loading.dart';
 import 'role_based_dashboard.dart';
 
 class ActivityScreen extends StatefulWidget {
@@ -13,16 +17,38 @@ class ActivityScreen extends StatefulWidget {
   State<ActivityScreen> createState() => _ActivityScreenState();
 }
 
-class _ActivityScreenState extends State<ActivityScreen> {
+class _ActivityScreenState extends State<ActivityScreen>
+    with SingleTickerProviderStateMixin {
   bool _didLoad = false;
+  late AnimationController _animCtrl;
+  late Animation<double> _fadeAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _animCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    _fadeAnim = CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut);
+  }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_didLoad) {
       _didLoad = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) => _loadData());
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        await _loadData();
+        if (mounted) _animCtrl.forward();
+      });
     }
+  }
+
+  @override
+  void dispose() {
+    _animCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -44,70 +70,84 @@ class _ActivityScreenState extends State<ActivityScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final trust = theme.colorScheme.secondary;
-
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: PawTrustApp.surfaceLight,
       body: Column(
         children: [
-          // Header
+          // ── Header ──
           Container(
-            height: 220,
             width: double.infinity,
-            decoration: BoxDecoration(
+            padding: EdgeInsets.fromLTRB(
+              24,
+              MediaQuery.of(context).padding.top + 16,
+              24,
+              28,
+            ),
+            decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [trust, trust.withAlpha(217)],
+                colors: [PawTrustApp.trustGreen, Color(0xFF059669)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
             ),
-            padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
             child: Row(
               children: [
                 const SizedBox(width: 48),
-                const Expanded(
+                Expanded(
                   child: Center(
                     child: Text(
                       'Activity',
-                      style: TextStyle(
+                      style: GoogleFonts.poppins(
                         color: Colors.white,
-                        fontSize: 18,
+                        fontSize: 20,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.refresh, color: Colors.white),
-                  onPressed: _loadData,
+                Material(
+                  color: Colors.white.withAlpha(31),
+                  borderRadius: BorderRadius.circular(12),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      _loadData();
+                    },
+                    child: const Padding(
+                      padding: EdgeInsets.all(10),
+                      child: Icon(
+                        Icons.refresh_rounded,
+                        color: Colors.white,
+                        size: 22,
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
 
-          // Content
+          // ── Content ──
           Expanded(
-            child: Container(
-              width: double.infinity,
-              transform: Matrix4.translationValues(0, -30, 0),
-              decoration: BoxDecoration(
-                color: theme.scaffoldBackgroundColor,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(32),
-                ),
-              ),
-              padding: const EdgeInsets.all(24),
+            child: FadeTransition(
+              opacity: _fadeAnim,
               child: Consumer2<AuthProvider, RequestProvider>(
                 builder: (context, auth, requests, _) {
                   final user = auth.user;
                   if (user == null) {
-                    return const Center(child: Text('Please log in'));
+                    return Center(
+                      child: Text(
+                        'Please log in',
+                        style: GoogleFonts.poppins(
+                          color: PawTrustApp.textSecondary,
+                        ),
+                      ),
+                    );
                   }
 
                   final isCaregiver = user.role == UserRole.caregiver;
-
-                  // Get active and completed lists based on role
                   final activeList = isCaregiver
                       ? requests.activeRequests
                       : requests.ownerActiveRequests;
@@ -118,49 +158,52 @@ class _ActivityScreenState extends State<ActivityScreen> {
                   if (requests.isLoading &&
                       activeList.isEmpty &&
                       completedList.isEmpty) {
-                    return const Center(child: CircularProgressIndicator());
+                    return const Padding(
+                      padding: EdgeInsets.all(24),
+                      child: ShimmerList(itemCount: 4),
+                    );
                   }
 
                   return RefreshIndicator(
+                    color: PawTrustApp.trustGreen,
                     onRefresh: _loadData,
                     child: ListView(
                       physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(20),
                       children: [
-                        // Active walk status card
-                        _buildActiveWalkCard(context, activeList, trust),
+                        _buildActiveWalkCard(activeList),
                         const SizedBox(height: 24),
 
-                        // Quick action button
+                        // Quick action
                         SizedBox(
                           width: double.infinity,
-                          height: 48,
+                          height: 52,
                           child: ElevatedButton.icon(
                             onPressed: () {
+                              HapticFeedback.lightImpact();
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(
-                                  builder: (_) => const RoleBasedDashboard(),
+                                PageRouteBuilder(
+                                  pageBuilder: (_, a, __) => FadeTransition(
+                                    opacity: a,
+                                    child: const RoleBasedDashboard(),
+                                  ),
+                                  transitionDuration: const Duration(
+                                    milliseconds: 300,
+                                  ),
                                 ),
                               );
                             },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: trust,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                            ),
                             icon: Icon(
                               isCaregiver
                                   ? Icons.assignment_rounded
-                                  : Icons.directions_walk,
-                              color: Colors.white,
+                                  : Icons.directions_walk_rounded,
                             ),
                             label: Text(
                               isCaregiver
                                   ? 'View All Requests'
                                   : 'Manage Walks',
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: GoogleFonts.poppins(
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -168,22 +211,22 @@ class _ActivityScreenState extends State<ActivityScreen> {
                         ),
                         const SizedBox(height: 32),
 
-                        // Recent History
-                        const Text(
+                        Text(
                           'Recent Activity',
-                          style: TextStyle(
+                          style: GoogleFonts.poppins(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
+                            color: PawTrustApp.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 12),
 
                         if (completedList.isEmpty)
-                          _buildEmptyHistoryState(context)
+                          _buildEmptyHistoryState()
                         else
                           ...completedList
                               .take(10)
-                              .map((r) => _buildHistoryCard(context, r)),
+                              .map((r) => _buildHistoryCard(r)),
                       ],
                     ),
                   );
@@ -196,22 +239,19 @@ class _ActivityScreenState extends State<ActivityScreen> {
     );
   }
 
-  Widget _buildActiveWalkCard(
-    BuildContext context,
-    List<RequestModel> activeList,
-    Color trust,
-  ) {
+  // ── Active Walk Card ──
+  Widget _buildActiveWalkCard(List<RequestModel> activeList) {
     if (activeList.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
+          color: PawTrustApp.cardWhite,
+          borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withAlpha(20),
-              blurRadius: 24,
-              offset: const Offset(0, 12),
+              color: Colors.black.withAlpha(15),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
             ),
           ],
         ),
@@ -220,24 +260,35 @@ class _ActivityScreenState extends State<ActivityScreen> {
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: trust.withAlpha(31),
-                shape: BoxShape.circle,
+                color: const Color(0xFFDCFCE7),
+                borderRadius: BorderRadius.circular(14),
               ),
-              child: Icon(Icons.location_off, color: trust, size: 28),
+              child: const Icon(
+                Icons.location_off_rounded,
+                color: PawTrustApp.trustGreen,
+                size: 26,
+              ),
             ),
             const SizedBox(width: 16),
-            const Expanded(
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'No Active Walk',
-                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: PawTrustApp.textPrimary,
+                    ),
                   ),
-                  SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   Text(
                     'Book a caregiver to start a walk session.',
-                    style: TextStyle(color: Colors.black54),
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      color: PawTrustApp.textSecondary,
+                    ),
                   ),
                 ],
               ),
@@ -247,21 +298,23 @@ class _ActivityScreenState extends State<ActivityScreen> {
       );
     }
 
-    // Show active walks
     return Column(
       children: activeList.map((request) {
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: trust.withAlpha(77), width: 1.5),
+            color: PawTrustApp.cardWhite,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: PawTrustApp.trustGreen.withAlpha(51),
+              width: 1.5,
+            ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withAlpha(20),
-                blurRadius: 24,
-                offset: const Offset(0, 12),
+                color: Colors.black.withAlpha(15),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
               ),
             ],
           ),
@@ -270,13 +323,13 @@ class _ActivityScreenState extends State<ActivityScreen> {
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: Colors.green.withAlpha(31),
-                  shape: BoxShape.circle,
+                  color: const Color(0xFFDCFCE7),
+                  borderRadius: BorderRadius.circular(14),
                 ),
                 child: const Icon(
-                  Icons.directions_walk,
-                  color: Colors.green,
-                  size: 28,
+                  Icons.directions_walk_rounded,
+                  color: PawTrustApp.trustGreen,
+                  size: 26,
                 ),
               ),
               const SizedBox(width: 16),
@@ -286,23 +339,27 @@ class _ActivityScreenState extends State<ActivityScreen> {
                   children: [
                     Text(
                       'Active: ${request.petName}',
-                      style: const TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.bold,
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: PawTrustApp.textPrimary,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 2),
                     Text(
                       'With ${request.caregiverName}',
-                      style: const TextStyle(color: Colors.black54),
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        color: PawTrustApp.textSecondary,
+                      ),
                     ),
                     if (request.requestedTime != null)
                       Text(
                         'Scheduled: ${request.requestedTime}',
-                        style: TextStyle(
-                          color: trust,
+                        style: GoogleFonts.poppins(
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
+                          color: PawTrustApp.trustGreen,
                         ),
                       ),
                   ],
@@ -314,13 +371,13 @@ class _ActivityScreenState extends State<ActivityScreen> {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.green.withAlpha(26),
+                  color: const Color(0xFFDCFCE7),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Text(
+                child: Text(
                   'ACTIVE',
-                  style: TextStyle(
-                    color: Colors.green,
+                  style: GoogleFonts.poppins(
+                    color: PawTrustApp.trustGreen,
                     fontWeight: FontWeight.bold,
                     fontSize: 11,
                   ),
@@ -333,19 +390,26 @@ class _ActivityScreenState extends State<ActivityScreen> {
     );
   }
 
-  Widget _buildHistoryCard(BuildContext context, RequestModel request) {
+  // ── History Card ──
+  Widget _buildHistoryCard(RequestModel request) {
     final isCompleted = request.status == RequestStatus.completed;
-    final statusColor = isCompleted ? Colors.green : Colors.orange;
+    final statusColor = isCompleted
+        ? PawTrustApp.trustGreen
+        : const Color(0xFFF59E0B);
     final statusLabel = isCompleted ? 'Completed' : request.status.name;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        color: PawTrustApp.cardWhite,
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: Colors.black.withAlpha(13), blurRadius: 12),
+          BoxShadow(
+            color: Colors.black.withAlpha(10),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
         ],
       ),
       child: Row(
@@ -354,10 +418,10 @@ class _ActivityScreenState extends State<ActivityScreen> {
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: statusColor.withAlpha(26),
-              shape: BoxShape.circle,
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
-              isCompleted ? Icons.check_circle : Icons.schedule,
+              isCompleted ? Icons.check_circle_rounded : Icons.schedule_rounded,
               color: statusColor,
               size: 22,
             ),
@@ -369,15 +433,19 @@ class _ActivityScreenState extends State<ActivityScreen> {
               children: [
                 Text(
                   request.petName,
-                  style: const TextStyle(
+                  style: GoogleFonts.poppins(
                     fontWeight: FontWeight.w600,
                     fontSize: 15,
+                    color: PawTrustApp.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   '${request.caregiverName} • ${_formatDate(request.requestedDate)}',
-                  style: const TextStyle(color: Colors.black54, fontSize: 13),
+                  style: GoogleFonts.poppins(
+                    color: PawTrustApp.textSecondary,
+                    fontSize: 13,
+                  ),
                 ),
               ],
             ),
@@ -390,7 +458,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
             ),
             child: Text(
               statusLabel,
-              style: TextStyle(
+              style: GoogleFonts.poppins(
                 color: statusColor,
                 fontWeight: FontWeight.w600,
                 fontSize: 12,
@@ -402,42 +470,52 @@ class _ActivityScreenState extends State<ActivityScreen> {
     );
   }
 
-  Widget _buildEmptyHistoryState(BuildContext context) {
-    final trust = Theme.of(context).colorScheme.secondary;
-
+  // ── Empty History ──
+  Widget _buildEmptyHistoryState() {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        color: PawTrustApp.cardWhite,
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(15),
+            color: Colors.black.withAlpha(10),
             blurRadius: 20,
-            offset: const Offset(0, 10),
+            offset: const Offset(0, 8),
           ),
         ],
       ),
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              color: trust.withAlpha(31),
-              shape: BoxShape.circle,
+              color: const Color(0xFFDCFCE7),
+              borderRadius: BorderRadius.circular(18),
             ),
-            child: Icon(Icons.history, size: 36, color: trust),
+            child: const Icon(
+              Icons.history_rounded,
+              size: 36,
+              color: PawTrustApp.trustGreen,
+            ),
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'No activity yet',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: GoogleFonts.poppins(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: PawTrustApp.textPrimary,
+            ),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Your pet walks and care sessions will appear here.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.black54),
+            style: GoogleFonts.poppins(
+              color: PawTrustApp.textSecondary,
+              fontSize: 14,
+            ),
           ),
         ],
       ),

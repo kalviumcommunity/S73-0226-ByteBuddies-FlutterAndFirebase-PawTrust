@@ -1,9 +1,13 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import '../app.dart';
 import '../providers/pets_provider.dart';
 import '../models/pet_model.dart';
+import '../widgets/paw_snackbar.dart';
 
 class EditPetScreen extends StatefulWidget {
   final PetModel pet;
@@ -15,8 +19,6 @@ class EditPetScreen extends StatefulWidget {
 }
 
 class _EditPetScreenState extends State<EditPetScreen> {
-  static const Color trustGreen = Color(0xFF2F7D32);
-
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _breedController = TextEditingController();
@@ -31,7 +33,6 @@ class _EditPetScreenState extends State<EditPetScreen> {
   @override
   void initState() {
     super.initState();
-    // Initialize form with existing pet data
     _nameController.text = widget.pet.name;
     _breedController.text = widget.pet.breed ?? '';
     _ageController.text = widget.pet.age.toString();
@@ -40,6 +41,7 @@ class _EditPetScreenState extends State<EditPetScreen> {
   }
 
   Future<void> _pickImage() async {
+    HapticFeedback.selectionClick();
     final pickedFile = await _picker.pickImage(
       source: ImageSource.gallery,
       maxWidth: 800,
@@ -62,6 +64,7 @@ class _EditPetScreenState extends State<EditPetScreen> {
 
   Future<void> _handleUpdatePet() async {
     if (!_formKey.currentState!.validate()) return;
+    HapticFeedback.lightImpact();
 
     setState(() => _isLoading = true);
 
@@ -84,19 +87,12 @@ class _EditPetScreenState extends State<EditPetScreen> {
     if (!mounted) return;
 
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Pet updated successfully!'),
-          backgroundColor: trustGreen,
-        ),
-      );
+      PawSnackBar.success(context, 'Pet updated successfully!');
       Navigator.pop(context);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(petsProvider.errorMessage ?? 'Failed to update pet'),
-          backgroundColor: Colors.red,
-        ),
+      PawSnackBar.error(
+        context,
+        petsProvider.errorMessage ?? 'Failed to update pet',
       );
       petsProvider.clearError();
     }
@@ -104,63 +100,70 @@ class _EditPetScreenState extends State<EditPetScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: PawTrustApp.surfaceLight,
       body: Column(
         children: [
-          // Header
+          // ── Header ──
           Container(
-            height: 220,
             width: double.infinity,
+            padding: EdgeInsets.fromLTRB(
+              16,
+              MediaQuery.of(context).padding.top + 8,
+              24,
+              28,
+            ),
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [trustGreen, Color(0xFF4CAF50)],
+                colors: [PawTrustApp.primaryBlue, Color(0xFF3B82F6)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
             ),
-            padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.white),
-                  onPressed: () => Navigator.pop(context),
-                  padding: EdgeInsets.zero,
-                  alignment: Alignment.centerLeft,
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Edit Pet',
-                  style: TextStyle(
+                  icon: const Icon(
+                    Icons.arrow_back_rounded,
                     color: Colors.white,
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
+                  ),
+                  onPressed: () {
+                    HapticFeedback.selectionClick();
+                    Navigator.pop(context);
+                  },
+                ),
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: Text(
+                    'Edit Pet',
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 4),
-                const Text(
-                  'Update your pet\'s information',
-                  style: TextStyle(color: Colors.white70, fontSize: 14),
+                Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: Text(
+                    'Update your pet\'s information',
+                    style: GoogleFonts.poppins(
+                      color: Colors.white70,
+                      fontSize: 14,
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
 
-          // Form Content
+          // ── Form Content ──
           Expanded(
-            child: Container(
-              width: double.infinity,
-              transform: Matrix4.translationValues(0, -30, 0),
-              decoration: BoxDecoration(
-                color: theme.scaffoldBackgroundColor,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(32),
-                ),
-              ),
-              padding: const EdgeInsets.all(24),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
               child: Form(
                 key: _formKey,
                 child: ListView(
@@ -170,13 +173,13 @@ class _EditPetScreenState extends State<EditPetScreen> {
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
+                        color: PawTrustApp.cardWhite,
+                        borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withAlpha(15),
-                            blurRadius: 16,
-                            offset: const Offset(0, 4),
+                            color: Colors.black.withAlpha(10),
+                            blurRadius: 20,
+                            offset: const Offset(0, 6),
                           ),
                         ],
                       ),
@@ -189,39 +192,65 @@ class _EditPetScreenState extends State<EditPetScreen> {
                               onTap: _pickImage,
                               child: Stack(
                                 children: [
-                                  CircleAvatar(
-                                    radius: 45,
-                                    backgroundColor: Colors.grey.shade200,
-                                    backgroundImage: _imageBytes != null
-                                        ? MemoryImage(_imageBytes!)
-                                        : (widget.pet.photoUrl != null
-                                              ? NetworkImage(
-                                                  widget.pet.photoUrl!,
-                                                )
-                                              : null),
-                                    child:
-                                        (_imageBytes == null &&
-                                            widget.pet.photoUrl == null)
-                                        ? Icon(
-                                            Icons.pets,
-                                            size: 36,
-                                            color: Colors.grey.shade400,
-                                          )
-                                        : null,
+                                  Container(
+                                    width: 98,
+                                    height: 98,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          PawTrustApp.primaryBlue.withAlpha(77),
+                                          PawTrustApp.tertiary.withAlpha(51),
+                                        ],
+                                      ),
+                                    ),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(3),
+                                      child: CircleAvatar(
+                                        radius: 45,
+                                        backgroundColor:
+                                            PawTrustApp.borderColor,
+                                        backgroundImage: _imageBytes != null
+                                            ? MemoryImage(_imageBytes!)
+                                            : (widget.pet.photoUrl != null
+                                                  ? NetworkImage(
+                                                      widget.pet.photoUrl!,
+                                                    )
+                                                  : null),
+                                        child:
+                                            (_imageBytes == null &&
+                                                widget.pet.photoUrl == null)
+                                            ? const Icon(
+                                                Icons.pets_rounded,
+                                                size: 36,
+                                                color:
+                                                    PawTrustApp.textSecondary,
+                                              )
+                                            : null,
+                                      ),
+                                    ),
                                   ),
                                   Positioned(
                                     bottom: 0,
                                     right: 0,
                                     child: Container(
-                                      padding: const EdgeInsets.all(5),
-                                      decoration: const BoxDecoration(
-                                        color: trustGreen,
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        color: PawTrustApp.primaryBlue,
                                         shape: BoxShape.circle,
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: PawTrustApp.primaryBlue
+                                                .withAlpha(77),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ],
                                       ),
                                       child: const Icon(
-                                        Icons.camera_alt,
+                                        Icons.camera_alt_rounded,
                                         color: Colors.white,
-                                        size: 16,
+                                        size: 14,
                                       ),
                                     ),
                                   ),
@@ -229,12 +258,14 @@ class _EditPetScreenState extends State<EditPetScreen> {
                               ),
                             ),
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 20),
 
                           Text(
                             'Pet Details',
-                            style: theme.textTheme.titleMedium?.copyWith(
+                            style: GoogleFonts.poppins(
                               fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: PawTrustApp.textPrimary,
                             ),
                           ),
                           const SizedBox(height: 20),
@@ -243,12 +274,13 @@ class _EditPetScreenState extends State<EditPetScreen> {
                           TextFormField(
                             controller: _nameController,
                             textCapitalization: TextCapitalization.words,
+                            style: GoogleFonts.poppins(fontSize: 14),
                             decoration: InputDecoration(
                               labelText: 'Pet Name *',
                               hintText: 'Enter pet name',
-                              prefixIcon: const Icon(Icons.pets),
+                              prefixIcon: const Icon(Icons.pets_rounded),
                               filled: true,
-                              fillColor: theme.scaffoldBackgroundColor,
+                              fillColor: PawTrustApp.surfaceLight,
                             ),
                             validator: (value) {
                               if (value == null || value.trim().isEmpty) {
@@ -264,12 +296,16 @@ class _EditPetScreenState extends State<EditPetScreen> {
 
                           // Pet Type
                           DropdownButtonFormField<PetType>(
-                            initialValue: _selectedType,
+                            value: _selectedType,
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              color: PawTrustApp.textPrimary,
+                            ),
                             decoration: InputDecoration(
                               labelText: 'Pet Type *',
-                              prefixIcon: const Icon(Icons.category),
+                              prefixIcon: const Icon(Icons.category_rounded),
                               filled: true,
-                              fillColor: theme.scaffoldBackgroundColor,
+                              fillColor: PawTrustApp.surfaceLight,
                             ),
                             items: PetType.values
                                 .map(
@@ -291,12 +327,15 @@ class _EditPetScreenState extends State<EditPetScreen> {
                           TextFormField(
                             controller: _breedController,
                             textCapitalization: TextCapitalization.words,
+                            style: GoogleFonts.poppins(fontSize: 14),
                             decoration: InputDecoration(
                               labelText: 'Breed (Optional)',
                               hintText: 'Enter breed',
-                              prefixIcon: const Icon(Icons.info_outline),
+                              prefixIcon: const Icon(
+                                Icons.info_outline_rounded,
+                              ),
                               filled: true,
-                              fillColor: theme.scaffoldBackgroundColor,
+                              fillColor: PawTrustApp.surfaceLight,
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -305,12 +344,13 @@ class _EditPetScreenState extends State<EditPetScreen> {
                           TextFormField(
                             controller: _ageController,
                             keyboardType: TextInputType.number,
+                            style: GoogleFonts.poppins(fontSize: 14),
                             decoration: InputDecoration(
                               labelText: 'Age (years) *',
                               hintText: 'Enter age',
-                              prefixIcon: const Icon(Icons.cake),
+                              prefixIcon: const Icon(Icons.cake_rounded),
                               filled: true,
-                              fillColor: theme.scaffoldBackgroundColor,
+                              fillColor: PawTrustApp.surfaceLight,
                             ),
                             validator: (value) {
                               if (value == null || value.trim().isEmpty) {
@@ -330,12 +370,16 @@ class _EditPetScreenState extends State<EditPetScreen> {
 
                           // Gender
                           DropdownButtonFormField<PetGender>(
-                            initialValue: _selectedGender,
+                            value: _selectedGender,
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              color: PawTrustApp.textPrimary,
+                            ),
                             decoration: InputDecoration(
                               labelText: 'Gender *',
-                              prefixIcon: const Icon(Icons.wc),
+                              prefixIcon: const Icon(Icons.wc_rounded),
                               filled: true,
-                              fillColor: theme.scaffoldBackgroundColor,
+                              fillColor: PawTrustApp.surfaceLight,
                             ),
                             items: PetGender.values
                                 .map(
@@ -359,15 +403,9 @@ class _EditPetScreenState extends State<EditPetScreen> {
 
                     // Update Button
                     SizedBox(
-                      height: 50,
+                      height: 54,
                       child: ElevatedButton(
                         onPressed: _isLoading ? null : _handleUpdatePet,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: trustGreen,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
                         child: _isLoading
                             ? const SizedBox(
                                 height: 20,
@@ -377,9 +415,9 @@ class _EditPetScreenState extends State<EditPetScreen> {
                                   strokeWidth: 2,
                                 ),
                               )
-                            : const Text(
+                            : Text(
                                 'Update Pet',
-                                style: TextStyle(
+                                style: GoogleFonts.poppins(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -387,24 +425,21 @@ class _EditPetScreenState extends State<EditPetScreen> {
                       ),
                     ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
 
                     // Delete Button
                     SizedBox(
-                      height: 50,
+                      height: 54,
                       child: OutlinedButton.icon(
                         onPressed: _isLoading ? null : _showDeleteDialog,
                         style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Colors.red),
-                          foregroundColor: Colors.red,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
+                          side: const BorderSide(color: Color(0xFFEF4444)),
+                          foregroundColor: const Color(0xFFEF4444),
                         ),
-                        icon: const Icon(Icons.delete_outline),
-                        label: const Text(
+                        icon: const Icon(Icons.delete_outline_rounded),
+                        label: Text(
                           'Delete Pet',
-                          style: TextStyle(
+                          style: GoogleFonts.poppins(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
@@ -441,30 +476,17 @@ class _EditPetScreenState extends State<EditPetScreen> {
     }
   }
 
-  void _showDeleteDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Pet'),
-        content: Text(
+  void _showDeleteDialog() async {
+    HapticFeedback.mediumImpact();
+    final confirmed = await PawDialog.confirm(
+      context,
+      title: 'Delete Pet',
+      message:
           'Are you sure you want to delete ${widget.pet.name}? This action cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _handleDeletePet();
-            },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
+      confirmLabel: 'Delete',
+      isDangerous: true,
     );
+    if (confirmed == true) _handleDeletePet();
   }
 
   Future<void> _handleDeletePet() async {
@@ -478,19 +500,12 @@ class _EditPetScreenState extends State<EditPetScreen> {
     if (!mounted) return;
 
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Pet deleted successfully'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      PawSnackBar.warning(context, 'Pet deleted successfully');
       Navigator.pop(context);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(petsProvider.errorMessage ?? 'Failed to delete pet'),
-          backgroundColor: Colors.red,
-        ),
+      PawSnackBar.error(
+        context,
+        petsProvider.errorMessage ?? 'Failed to delete pet',
       );
       petsProvider.clearError();
     }
