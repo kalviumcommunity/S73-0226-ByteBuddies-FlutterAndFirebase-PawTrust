@@ -18,6 +18,7 @@ class AuthProvider extends ChangeNotifier {
   UserModel? _userProfile;
   String? _errorMessage;
   bool _needsRoleSelection = false;
+  bool _isAuthenticating = false; // Prevents race conditions
 
   AuthStatus get status => _status;
   UserModel? get userProfile => _userProfile;
@@ -33,6 +34,9 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> _init() async {
     _authService.authStateChanges.listen((user) async {
+      // Skip if we're in the middle of a sign-in/sign-up operation
+      if (_isAuthenticating) return;
+
       if (user != null) {
         await _loadUserProfile(user.uid);
       } else {
@@ -56,7 +60,10 @@ class AuthProvider extends ChangeNotifier {
         _status = AuthStatus.authenticated;
       }
     } catch (e) {
-      _status = AuthStatus.error;
+      // On Firestore error, still allow user through since Firebase Auth succeeded
+      // They may need to select a role or profile will be created later
+      _needsRoleSelection = true;
+      _status = AuthStatus.authenticated;
       _errorMessage = e.toString();
     }
     notifyListeners();
@@ -69,6 +76,7 @@ class AuthProvider extends ChangeNotifier {
     required String fullName,
   }) async {
     try {
+      _isAuthenticating = true;
       _status = AuthStatus.authenticating;
       _errorMessage = null;
       notifyListeners();
@@ -82,12 +90,15 @@ class AuthProvider extends ChangeNotifier {
       if (credential.user != null) {
         _needsRoleSelection = true;
         _status = AuthStatus.authenticated;
+        _isAuthenticating = false;
         notifyListeners();
         return true;
       }
+      _isAuthenticating = false;
       return false;
     } catch (e) {
-      _status = AuthStatus.error;
+      _isAuthenticating = false;
+      _status = AuthStatus.unauthenticated;
       _errorMessage = e.toString();
       notifyListeners();
       return false;
@@ -97,6 +108,7 @@ class AuthProvider extends ChangeNotifier {
   /// Sign in with email and password
   Future<bool> signIn({required String email, required String password}) async {
     try {
+      _isAuthenticating = true;
       _status = AuthStatus.authenticating;
       _errorMessage = null;
       notifyListeners();
@@ -108,11 +120,14 @@ class AuthProvider extends ChangeNotifier {
 
       if (credential.user != null) {
         await _loadUserProfile(credential.user!.uid);
+        _isAuthenticating = false;
         return true;
       }
+      _isAuthenticating = false;
       return false;
     } catch (e) {
-      _status = AuthStatus.error;
+      _isAuthenticating = false;
+      _status = AuthStatus.unauthenticated;
       _errorMessage = e.toString();
       notifyListeners();
       return false;
