@@ -238,7 +238,7 @@ class AuthWrapper extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<AuthProvider>(
       builder: (context, authProvider, _) {
-        // Show loading while initializing
+        // Show loading while initializing or authenticating
         if (authProvider.status == AuthStatus.initial ||
             authProvider.status == AuthStatus.authenticating) {
           return Scaffold(
