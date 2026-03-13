@@ -87,6 +87,10 @@ class _CaregiverJobScreenState extends State<CaregiverJobScreen> {
   }
 
   Future<void> _completeWalk() async {
+    final requestProvider = context.read<RequestProvider>();
+    final walksProvider = context.read<WalksProvider>();
+    final navigator = Navigator.of(context);
+
     HapticFeedback.mediumImpact();
 
     final confirm = await PawDialog.confirm(
@@ -99,10 +103,6 @@ class _CaregiverJobScreenState extends State<CaregiverJobScreen> {
     if (confirm != true) return;
 
     setState(() => _isCompleting = true);
-
-    final requestProvider = context.read<RequestProvider>();
-    final walksProvider = context.read<WalksProvider>();
-    final navigator = Navigator.of(context);
 
     bool success = await requestProvider.completeRequest(widget.request.id);
 
